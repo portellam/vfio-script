@@ -2,7 +2,7 @@
 ### Pre-Development
 Install and uninstall a VFIO setup on a Linux machine. Choose between a dynamic, GRUB, or static setup. 
 
-#### View this repository on [Codeberg][01], [GitHub][02].
+#### View this repository on [Codeberg][01] or [GitHub][02].
 [01]: https://codeberg.org/portellam/vfio-script
 [02]: https://github.com/portellam/vfio-script
 ##
@@ -30,7 +30,7 @@ or [GitHub][12].
 - Virtual Machine XML Format Guide[<sup>[4]</sup>](#4)
 
 ### 3. Download
-- Download the Latest Release:&ensp;[Codeberg][31], [GitHub][32]
+- Download the Latest Release:&ensp;[Codeberg][31] or [GitHub][32].
 
 - Download the `.zip` file:
     1. Viewing from the top of the repository's (current) webpage, click the
