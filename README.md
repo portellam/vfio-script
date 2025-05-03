@@ -1,5 +1,5 @@
 # VFIO Script
-### Development
+### Development | v0.0.1
 Easily install, uninstall, or reinstall a VFIO setup on a Linux machine. Choose
 between a dynamic, GRUB, or static setup.
 
@@ -123,8 +123,8 @@ sudo bash installer.sh
                             to override with the "pci-stub" driver.
                             HWIDS is a comma delimited list of text.
 
-  --exclude--groups=GROUPS    Specify which IOMMU groups drivers may be reserved
-                              for the Host machine, if not defined within
+  --exclude--groups=GROUPS    Specify which IOMMU groups may be reserved for
+                              the Host machine, if not defined within
                               "--groups".
                               GROUPS is a comma delimited list of positive
                               numbers.
