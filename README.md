@@ -19,7 +19,7 @@ between a dynamic, GRUB, or static setup.
 
 ## Contents
 ### 1. Why?
-Do you like editing configuration files?
+Do you like editing configuration files? Repeatedly?
 
 No? Then you're going **sane**.
 
@@ -82,12 +82,13 @@ sudo bash installer.sh
   -v, --verbose             Show more output.
 
   -D, --dynamic             Define a temporary VFIO setup as a QEMU command
-                            line or Libvirt hook. May be created/destroyed on a
-                            specific Guest machine startup/shutdown.
+                            line. Append to a Libvirt hook or a Guest machine
+                            configuration file. VFIO setup may be
+                            created/destroyed on a Guest startup/shutdown.
 
   -G, --grub=NUMS           Define one or more VFIO setup(s) as command line(s);
                             setup(s) are defined as GRUB boot menu entries,
-                            where one may be chosen at Host startup.
+                            where one may be chosen at Host machine startup.
                             Note: multiple GPUs on separate IOMMU groups will
                             create multiple VFIO setups.
                             NUMS is a comma delimited list of positive non-zero
@@ -101,7 +102,8 @@ sudo bash installer.sh
   --override                Override limits for features which may repeat a
                             given command many times (limit is five (5)
                             repetitions).
-                            Note: "--grub=9" may use nine (9) or less kernels.
+                            Note: "--grub=9" may use nine (9) or less kernels,
+                            default is five (5) or less kernels.
 
   Note: the following options may be avoided to allow a given VFIO setup to
   determine which devices to use or not.
@@ -110,15 +112,15 @@ sudo bash installer.sh
                             Guest machine.
                             GROUPS is a comma delimited list of text.
 
-  -d, --drivers=DRIVERS     Specify which devices' drivers to be overridden by
-                            the "vfio-pci" driver.
+  -d, --drivers=DRIVERS     Specify which devices' drivers to override with the
+                            "vfio-pci" driver.
                             DRIVERS is a comma delimited list of text.
 
   -h, --ids=HWIDS           Specify which devices' IDs to blacklist.
                             HWIDS is a comma delimited list of text.
 
   --pci-stub-ids=HWIDS      Specify which devices' IDs to blacklist and drivers
-                            to be overridden by the "pci-stub" driver.
+                            to override with the "pci-stub" driver.
                             HWIDS is a comma delimited list of text.
 
   --exclude--groups=GROUPS    Specify which IOMMU groups drivers may be reserved
@@ -127,8 +129,8 @@ sudo bash installer.sh
                               GROUPS is a comma delimited list of positive
                               numbers.
 
-  --exclude-drivers=DRIVERS   Specify which devices' drivers to not be
-                              overridden by a VFIO driver, if not defined within
+  --exclude-drivers=DRIVERS   Specify which devices' drivers to not override
+                              with a VFIO driver, if not defined within
                               "--drivers".
                               DRIVERS is a comma delimited list of text.
 
