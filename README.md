@@ -19,8 +19,7 @@ between a dynamic, GRUB, or static setup.
 
 ## Contents
 ### 1. Why?
-Do you like getting dirty in Linux? Writing and updating configuration files?
-Repetitive steps are more enjoyable than the outcome?
+Do you like editing configuration files?
 
 No? Then you're going **sane**.
 
@@ -28,8 +27,8 @@ No? Then you're going **sane**.
 To view other relevant projects, visit [Codeberg][21]
 or [GitHub][22].
 
-[11]: https://codeberg.org/portellam/vfio-collection
-[12]: https://github.com/portellam/vfio-collection
+[21]: https://codeberg.org/portellam/vfio-collection
+[22]: https://github.com/portellam/vfio-collection
 
 ### 3. Documentation
 - What is VFIO?[<sup>[2]</sup>](#2)
