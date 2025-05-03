@@ -1,6 +1,7 @@
 # VFIO Script
-### Pre-Development
-Install and uninstall a VFIO setup on a Linux machine. Choose between a dynamic, GRUB, or static setup. 
+### Development
+Easily install, uninstall, or reinstall a VFIO setup on a Linux machine. Choose
+between a dynamic, GRUB, or static setup.
 
 #### View this repository on [Codeberg][01] or [GitHub][02].
 [01]: https://codeberg.org/portellam/vfio-script
@@ -8,29 +9,36 @@ Install and uninstall a VFIO setup on a Linux machine. Choose between a dynamic,
 ##
 
 ## Table of Contents
-- [1. Related Projects](#1-related-projects)
-- [2. Documentation](#2-documentation)
-- [3. Download](#3-download)
-- [4. Contact](#4-contact)
-- [5. References](#5-references)
-- [6. Planned Features](#6-planned-features)
+- [1. Why?](#1-why)
+- [2. Related Projects](#2-related-projects)
+- [3. Documentation](#3-documentation)
+- [4. Download](#4-download)
+- [5. Usage](#5-usage)
+- [6. Contact](#6-contact)
+- [7. References](#7-references)
 
 ## Contents
-### 1. Related Projects
-To view other relevant projects, visit [Codeberg][11]
-or [GitHub][12].
+### 1. Why?
+Do you like getting dirty in Linux? Writing and updating configuration files?
+Repetitive steps are more enjoyable than the outcome?
+
+No? Then you're going **sane**.
+
+### 2. Related Projects
+To view other relevant projects, visit [Codeberg][21]
+or [GitHub][22].
 
 [11]: https://codeberg.org/portellam/vfio-collection
 [12]: https://github.com/portellam/vfio-collection
 
-### 2. Documentation
+### 3. Documentation
 - What is VFIO?[<sup>[2]</sup>](#2)
 - VFIO Discussion and Support[<sup>[3]</sup>](#3)
 - Hardware-Passthrough Guide[<sup>[1]</sup>](#1)
 - Virtual Machine XML Format Guide[<sup>[4]</sup>](#4)
 
-### 3. Download
-- Download the Latest Release:&ensp;[Codeberg][31] or [GitHub][32].
+### 4. Download
+- Download the Latest Release:&ensp;[Codeberg][41] or [GitHub][42].
 
 - Download the `.zip` file:
     1. Viewing from the top of the repository's (current) webpage, click the
@@ -55,17 +63,68 @@ or [GitHub][12].
         - `git clone https://www.codeberg.org/portellam/vfio-script`
         - `git clone https://www.github.com/portellam/vfio-script`
 
-[31]: https://codeberg.org/portellam/vfio-script/releases/latest
-[32]: https://github.com/portellam/vfio-script/releases/latest
+[41]: https://codeberg.org/portellam/vfio-script/releases/latest
+[42]: https://github.com/portellam/vfio-script/releases/latest
 
-### 4. Contact
+### 5. Usage
+#### 5.1. Install
+Installer will copy the script file to `/usr/local/bin/`, and source files to
+`/usr/local/bin/vfio-script.d/`.
+
+```bash
+sudo bash installer.sh
+```
+
+#### 5.2. Executable
+- From anywhere, execute: `vfio-setup`
+
+```
+  -h, --help                Print this help and exit.
+  -v, --verbose             Show more output.
+
+  -d, --drivers=DRIVERS     Specify what device drivers to use the "vfio-pci"
+                            driver.
+                            Note: You may avoid this option to allow a specified
+                            VFIO setup to determine what devices to blacklist or
+                            not.
+                            DRIVERS is a comma delimited list of text.
+
+  -h, --hardware-ids=HWIDS  Specify what device IDs to blacklist.
+                            Note: You may avoid this option to allow a specified
+                            VFIO setup to determine what devices to blacklist or
+                            not.
+                            HWIDS is a comma delimited list of text.
+
+  --pci-stub=HWIDS          Specify what device IDs to blacklist and device
+                            drivers to use the "pci-stub" driver.
+                            HWIDS is a comma delimited list of text.
+
+  -D, --dynamic             Define a temporary VFIO setup as a QEMU command
+                            line or Libvirt hook. May be created/destroyed on a
+                            specific Guest machine startup/shutdown.
+
+  -G, --grub=NUMS           Define one or more VFIO setup(s) as command line(s);
+                            setup(s) are defined as GRUB boot menu entries,
+                            where one may be chosen at Host startup.
+                            Note: multiple GPUs on separate IOMMU groups will
+                            create multiple VFIO setups.
+                            NUMS is a comma delimited list of positive non-zero
+                            numbers, which represent the number of kernel(s) to
+                            use per VFIO setup (latest to oldest).
+                            Note: To use all, leave blank.
+
+  -S, --static              Define a persistent VFIO setup via writing to
+                            various configuration files.
+```
+
+### 6. Contact
 Did you encounter a bug? Do you need help? Please visit the
 **Issues page** ([Codeberg][41], [GitHub][42]).
 
 [41]: https://codeberg.org/portellam/vfio-script/issues
 [42]: https://github.com/portellam/vfio-script/issues
 
-### 5. References
+### 7. References
 #### 1.
 &nbsp;&nbsp;**PCI passthrough via OVMF**. ArchWiki. Accessed June 14, 2024.
 
@@ -86,10 +145,5 @@ The linux kernel. Accessed June 14, 2024.
 &nbsp;&nbsp;**XML Design Format** GitHub - libvirt/libvirt. Accessed June 18, 2024.
 
 &nbsp;&nbsp;&nbsp;&nbsp;<sup>https://github.com/libvirt/libvirt/blob/master/docs/formatdomain.rst.</sup>
-
-### 5. Planned Features
-- Isolate and migrate VFIO setup from [Deploy VFIO](https://github.com/portellam/deploy-VFIO) and place here.
-- Implement a dynamic/hooks based VFIO setup.
-##
 
 #### Click [here](#vfio-script) to return to the top of this document.
