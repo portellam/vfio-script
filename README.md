@@ -75,7 +75,7 @@ sudo bash installer.sh
 ```
 
 #### 5.2. Executable
-- From anywhere, execute: `vfio-setup`
+- From anywhere, execute: `vfio-script`
 
 ```
   -h, --help                Print this help and exit.
