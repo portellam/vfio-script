@@ -1,0 +1,94 @@
+#!/bin/false
+
+#
+# Filename:       static_vfio_src
+# Description:
+# Author(s):      Alex Portell <github.com/portellam>
+# Maintainer(s):  Alex Portell <github.com/portellam>
+#
+
+SOURCE_ETC_PATH="${1}"
+
+CMDLINE_DEFAULTS="quiet splash"
+CMDLINE_EARLY_LOAD_MODULES="rd.driver.pre=vfio-pci rd.modules-load=vfio-pci"
+CMDLINE_FOR_WINDOWS10="kvm.ignore_msrs=1"
+CMDLINE_POWER_MANAGEMENT="acpi=force apm=power_off pcie_aspm=off"
+CMDLINE_PRIVACY="rfkill.default_state=1 systemd.restore_state=0"
+CMDLINE_UNSET_FRAMEBUFFER="video=efifb:off,vesafb:off"
+
+CMDLINE_PREFIX="${CMDLINE_DEFAULTS} ${CMDLINE_PRIVACY}"
+CMDLINE_PREFIX+="${CMDLINE_POWER_MANAGEMENT} ${CMDLINE_EARLY_LOAD_MODULES}"
+CMDLINE_PREFIX+="${CMDLINE_UNSET_FRAMEBUFFER} ${CMDLINE_FOR_WINDOWS10}"
+
+CPU_VENDOR_ID="$( \
+  lscpu \
+  | grep \
+    --extended-regexp \
+    --ignore-case \
+    Vendor \
+  | awk \
+    'END {print $3}' \
+)"
+
+function static_vfio_src_main
+{
+  vfio_pci_driver_delim="${1}"
+  vfio_pci_hardware_id_delim="${2}"
+  pci_stub_hardware_id_delim="${3}"
+
+}
+
+function write_grub
+{
+  vfio_pci_driver_delim="${1}"
+  vfio_pci_hardware_id_delim="${2}"
+  pci_stub_hardware_id_delim="${3}"
+
+  grub_cmdline="modprobe.blacklist=${vfio_pci_driver_delim} "
+  grub_cmdline+="pci_stub.ids=${pci_stub_hardware_id_delim} "
+  grub_cmdline+="vfio_pci.ids=${vfio_pci_hardware_id_delim} "
+  grub_cmdline="${prefix_grub_cmdline}${grub_cmdline::-1}"
+
+  destination_path="/etc/default/grub"
+  line_to_match="GRUB_CMDLINE_LINUX_DEFAULT="
+  line_to_replace="${line_to_match}\"${grub_cmdline}\""
+
+  if ! sed \
+    -i \
+    '/'"${line_to_match}"'/c\'"${line_to_replace}" \
+    "${destination_path}" \
+    &> /dev/null \
+  ; then
+    print_error_to_log "Failed to overwrite target lines of files."
+    return 1
+  fi
+}
+
+function write_initramfs
+{
+  partial_path="initramfs-tools/modules"
+  source_path="${SOURCE_ETC_PATH}/${partial_path}"
+  destination_path="/etc/${partial_path}"
+}
+
+function write_modprobe_blacklists
+{
+  partial_path="modprobe.d/pci-blacklists.conf"
+  source_path="${SOURCE_ETC_PATH}/${partial_path}"
+  destination_path="/etc/${partial_path}"
+}
+
+function write_modprobe_vfio
+{
+  partial_path="modprobe.d/vfio.conf"
+  source_path="${SOURCE_ETC_PATH}/${partial_path}"
+  destination_path="/etc/${partial_path}"
+}
+
+function write_modules
+{
+  partial_path="modules"
+  source_path="${SOURCE_ETC_PATH}/${partial_path}"
+  destination_path="/etc/${partial_path}"
+}
+
