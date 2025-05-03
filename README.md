@@ -82,23 +82,6 @@ sudo bash installer.sh
   -h, --help                Print this help and exit.
   -v, --verbose             Show more output.
 
-  -d, --drivers=DRIVERS     Specify what device drivers to use the "vfio-pci"
-                            driver.
-                            Note: You may avoid this option to allow a specified
-                            VFIO setup to determine what devices to blacklist or
-                            not.
-                            DRIVERS is a comma delimited list of text.
-
-  -h, --hardware-ids=HWIDS  Specify what device IDs to blacklist.
-                            Note: You may avoid this option to allow a specified
-                            VFIO setup to determine what devices to blacklist or
-                            not.
-                            HWIDS is a comma delimited list of text.
-
-  --pci-stub=HWIDS          Specify what device IDs to blacklist and device
-                            drivers to use the "pci-stub" driver.
-                            HWIDS is a comma delimited list of text.
-
   -D, --dynamic             Define a temporary VFIO setup as a QEMU command
                             line or Libvirt hook. May be created/destroyed on a
                             specific Guest machine startup/shutdown.
@@ -110,12 +93,68 @@ sudo bash installer.sh
                             create multiple VFIO setups.
                             NUMS is a comma delimited list of positive non-zero
                             numbers, which represent the number of kernel(s) to
-                            use per VFIO setup (latest to oldest).
-                            Note: To use all, leave blank.
+                            use per VFIO setup (sorted by newest to oldest).
+                            Note: to use all available, leave blank.
 
-  -S, --static              Define a persistent VFIO setup via writing to
+  -S, --static              Define a persistent VFIO setup by writing to
                             various configuration files.
+
+  --override                Override limits for features which may repeat a
+                            given command many times (limit is five (5)
+                            repetitions).
+                            Note: "--grub=9" may use nine (9) or less kernels.
+
+  Note: the following options may be avoided to allow a given VFIO setup to
+  determine which devices to use or not.
+
+  -g, --groups=GROUPS       Specify which IOMMU groups may be reserved for any
+                            Guest machine.
+                            GROUPS is a comma delimited list of text.
+
+  -d, --drivers=DRIVERS     Specify which devices' drivers to be overridden by
+                            the "vfio-pci" driver.
+                            DRIVERS is a comma delimited list of text.
+
+  -h, --ids=HWIDS           Specify which devices' IDs to blacklist.
+                            HWIDS is a comma delimited list of text.
+
+  --pci-stub-ids=HWIDS      Specify which devices' IDs to blacklist and drivers
+                            to be overridden by the "pci-stub" driver.
+                            HWIDS is a comma delimited list of text.
+
+  --exclude--groups=GROUPS    Specify which IOMMU groups drivers may be reserved
+                              for the Host machine, if not defined within
+                              "--groups".
+                              GROUPS is a comma delimited list of positive
+                              numbers.
+
+  --exclude-drivers=DRIVERS   Specify which devices' drivers to not be
+                              overridden by a VFIO driver, if not defined within
+                              "--drivers".
+                              DRIVERS is a comma delimited list of text.
+
+  --exclude-ids=HWIDS         Specify which devices' IDs to whitelist, if not
+                              defined within "--ids" or "--pci-stub-ids".
+                              HWIDS is a comma delimited list of text.
 ```
+
+#### TODO:
+- [ ] add exclusion arguments (drivers, hardware IDs, to ignore).
+- [ ] add logic to define a safe maximum (and arguments to override) for the following:
+  - number of linux kernels to use for GRUB menu entries (example: five kernels)
+  - number of multiple VFIO setups for GRUB (ex: five IOMMU groups with GPUs),
+  should execution of either `lspci` or `parse-iommu-devices` cause slow down.
+- [ ] disclose and utilize `parse-iommu-devices` for all features.
+- [ ] add logic to use `lspci` should `parse-iommu-devices` not be present.
+- [ ] disclose that for a dynamic setup, the output is partial. It is up to the
+user use this output to define guest machine QEMU command lines.
+- [ ] avoid global parameters and pass standard input to functions as input
+parameters.
+- [ ] enable/disable features given arguments
+  - defined preferred drivers/hardware IDs will disable GRUB setup.
+- [ ] warn user if a setup leaves fewer than one GPU for the Host machine.
+
+
 
 ### 6. Contact
 Did you encounter a bug? Do you need help? Please visit the
