@@ -17,6 +17,7 @@
 #
 
 #region Sources
+
   SOURCE_PATH="${1}"
   shift
   COLUMN_SIZE="$( tput cols )"
@@ -29,6 +30,7 @@
 #endregion
 
 #region Parameters
+
   #region Input Parameters
 
   SOURCE_ETC_PATH="${1}"
@@ -44,6 +46,8 @@
   fi
 
   #endregion
+
+#endregion
 
 DELIM=","
 HARDWARE_ID_REGEX="^[a-zA-Z0-9]{4}:[a-zA-Z0-9]{4}$"
@@ -76,9 +80,83 @@ CPU_VENDOR_ID="$( \
 #region Logic
 
   #
+  # $1: the delimited string of blacklisted device drivers.
+  # $2: the delimited string of device IDs to use "vfio-pci".
+  # $3: the delimited string of device IDs to use "pci-stub".
+  #
+  function static_vfio_src_main
+  {
+    vfio_pci_driver_delim="${1}"
+    vfio_pci_hardware_id_delim="${2}"
+    pci_stub_hardware_id_delim="${3}"
+
+    sanitize_hardware_id_delim "${pci_stub_hardware_id_delim}"
+    sanitize_hardware_id_delim "${vfio_pci_hardware_id_delim}"
+
+    if ! get_kernel_cmdline_iommu_driver; then
+      return 1
+    fi
+
+    if "${USE_GRUB}"; then
+      if ! write_grub \
+          "${vfio_pci_driver_delim}" \
+          "${vfio_pci_hardware_id_delim}" \
+          "${pci_stub_hardware_id_delim}" \
+        || ! update_grub; then
+        print_fail_to_log \
+          "Failed to install static VFIO setup via GRUB command line."
+
+        return 1
+      fi
+
+    else
+      if ! write_initramfs \
+          "${vfio_pci_driver_delim}" \
+          "${vfio_pci_hardware_id_delim}" \
+          "${pci_stub_hardware_id_delim}" \
+        || ! write_modprobe_blacklists \
+          "${vfio_pci_driver_delim}" \
+        || ! write_modprobe_vfio \
+          "${vfio_pci_driver_delim}" \
+          "${vfio_pci_hardware_id_delim}" \
+          "${pci_stub_hardware_id_delim}" \
+        || ! write_modules \
+          "${vfio_pci_driver_delim}" \
+        || ! update_initramfs; then
+        print_fail_to_log \
+          "Failed to install static VFIO setup via various configuration files."
+
+        return 1
+      fi
+    fi
+
+    print_pass_to_log "Installed a static VFIO setup."
+  }
+
+  function static_vfio_src_get_kernel_cmdline_iommu_driver
+  {
+    case "${CPU_VENDOR_ID}" in
+      *"amd"* )
+        CMDLINE_PREFIX="amd_iommu=on ${CMDLINE_PREFIX}" ;;
+
+      *"intel"* )
+        CMDLINE_PREFIX="intel_iommu=on ${CMDLINE_PREFIX}" ;;
+
+      * )
+        print_error_to_log "Unknown CPU vendor '${CPU_VENDOR_ID}'."
+
+        if "${ALLOW_UNSAFE}"; then
+          return 0
+        fi
+
+        return 1 ;;
+    esac
+  }
+
+  #
   # $1: the delimited string.
   #
-  function sanitize_hardware_id_delim
+  function static_vfio_src_sanitize_hardware_id_delim
   {
     if [[ "${1}" == "" ]]; then
       return 1
@@ -110,73 +188,7 @@ CPU_VENDOR_ID="$( \
     fi
   }
 
-  #
-  # $1: the delimited string of blacklisted device drivers.
-  # $2: the delimited string of device IDs to use "vfio-pci".
-  # $3: the delimited string of device IDs to use "pci-stub".
-  #
-  function static_vfio_src_main
-  {
-    vfio_pci_driver_delim="${1}"
-    vfio_pci_hardware_id_delim="${2}"
-    pci_stub_hardware_id_delim="${3}"
-
-    sanitize_hardware_id_delim "${pci_stub_hardware_id_delim}"
-    sanitize_hardware_id_delim "${vfio_pci_hardware_id_delim}"
-
-    if ! get_kernel_cmdline_iommu_driver; then
-      return 1
-    fi
-
-    if "${USE_GRUB}"; then
-      if ! write_grub \
-          "${vfio_pci_driver_delim}" \
-          "${vfio_pci_hardware_id_delim}" \
-          "${pci_stub_hardware_id_delim}" \
-        || ! update_grub; then
-        return 1
-      fi
-
-    else
-      if ! write_initramfs \
-          "${vfio_pci_driver_delim}" \
-          "${vfio_pci_hardware_id_delim}" \
-          "${pci_stub_hardware_id_delim}" \
-        || ! write_modprobe_blacklists \
-          "${vfio_pci_driver_delim}" \
-        || ! write_modprobe_vfio \
-          "${vfio_pci_driver_delim}" \
-          "${vfio_pci_hardware_id_delim}" \
-          "${pci_stub_hardware_id_delim}" \
-        || ! write_modules \
-          "${vfio_pci_driver_delim}" \
-        || ! update_initramfs; then
-        return 1
-      fi
-    fi
-  }
-
-  function get_kernel_cmdline_iommu_driver
-  {
-    case "${CPU_VENDOR_ID}" in
-      *"amd"* )
-        CMDLINE_PREFIX="amd_iommu=on ${CMDLINE_PREFIX}" ;;
-
-      *"intel"* )
-        CMDLINE_PREFIX="intel_iommu=on ${CMDLINE_PREFIX}" ;;
-
-      * )
-        print_error_to_log "Unknown CPU vendor '${CPU_VENDOR_ID}'."
-
-        if "${ALLOW_UNSAFE}"; then
-          return 0
-        fi
-
-        return 1 ;;
-    esac
-  }
-
-  function update_grub
+  function static_vfio_src_update_grub
   {
     output="Updating GRUB"
     print_output_to_log "${output}"
@@ -190,7 +202,7 @@ CPU_VENDOR_ID="$( \
     print_pass_to_log "${output}"
   }
 
-  function update_initramfs
+  function static_vfio_src_update_initramfs
   {
     output="Updating initramfs"
     print_output_to_log "${output}"
@@ -212,7 +224,7 @@ CPU_VENDOR_ID="$( \
   # $2: the delimited string of device IDs to use "vfio-pci".
   # $3: the delimited string of device IDs to use "pci-stub".
   #
-  function write_grub
+  function static_vfio_src_write_grub
   {
     vfio_pci_driver_delim="${1}"
     vfio_pci_hardware_id_delim="${2}"
@@ -241,7 +253,7 @@ CPU_VENDOR_ID="$( \
   # $2: the delimited string of device IDs to use "vfio-pci".
   # $3: the delimited string of device IDs to use "pci-stub".
   #
-  function write_initramfs
+  function static_vfio_src_write_initramfs
   {
     vfio_pci_driver_delim="${1}"
     vfio_pci_hardware_id_delim="${2}"
@@ -294,7 +306,7 @@ CPU_VENDOR_ID="$( \
   #
   # $1: the delimited string of blacklisted device drivers.
   #
-  function write_modprobe_blacklists
+  function static_vfio_src_write_modprobe_blacklists
   {
     vfio_pci_driver_delim="${1}"
 
@@ -327,7 +339,7 @@ CPU_VENDOR_ID="$( \
   # $2: the delimited string of device IDs to use "vfio-pci".
   # $3: the delimited string of device IDs to use "pci-stub".
   #
-  function write_modprobe_vfio
+  function static_vfio_src_write_modprobe_vfio
   {
     vfio_pci_driver_delim="${1}"
     vfio_pci_hardware_id_delim="${2}"
@@ -384,7 +396,7 @@ CPU_VENDOR_ID="$( \
   #
   # $1: the delimited string of blacklisted device drivers.
   #
-  function write_modules
+  function static_vfio_src_write_modules
   {
     vfio_pci_driver_delim="${1}"
 
