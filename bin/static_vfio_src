@@ -50,7 +50,10 @@
 #endregion
 
 DELIM=","
-HARDWARE_ID_REGEX="^[a-zA-Z0-9]{4}:[a-zA-Z0-9]{4}$"
+DRIVER_REGEX='^[a-zA-Z0-9_-]+$'
+DRIVER_DELIM_REGEX='^([a-zA-Z_-]+)(,[a-zA-Z_-]+)*$'
+HARDWARE_ID_REGEX='^([a-zA-Z0-9]{4}):([a-zA-Z0-9]{4})$'
+HARDWARE_ID_DELIM_REGEX='^([a-zA-Z0-9]{4}:[a-zA-Z0-9]{4})(,[a-zA-Z0-9]{4}:[a-zA-Z0-9]{4})*$'
 VFIO_PCI_DRIVER="vfio-pci"
 
 CMDLINE_DEFAULTS="quiet splash"
@@ -80,29 +83,54 @@ CPU_VENDOR_ID="$( \
 #region Logic
 
   #
-  # $1: the delimited string of blacklisted device drivers.
-  # $2: the delimited string of device IDs to use "vfio-pci".
-  # $3: the delimited string of device IDs to use "pci-stub".
+  # $1: the whitespace delimited string of command lines.
+  # $2: the comma delimited string of blacklisted device drivers.
+  # $3: the comma delimited string of device IDs to use "vfio-pci".
+  # $4: the comma delimited string of device IDs to use "pci-stub".
   #
   function static_vfio_src_main
   {
+    cmdline_prefix="${1}"
+
+    if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
+      && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
+      cmdline_prefix="${cmdline_prefix//\"/}"
+      shift
+
+    else
+      cmdline_prefix=""
+    fi
+
     vfio_pci_driver_delim="${1}"
     vfio_pci_hardware_id_delim="${2}"
     pci_stub_hardware_id_delim="${3}"
 
-    sanitize_hardware_id_delim "${pci_stub_hardware_id_delim}"
-    sanitize_hardware_id_delim "${vfio_pci_hardware_id_delim}"
+    static_vfio_src_sanitize_delim \
+      "${pci_stub_hardware_id_delim}" \
+      "${DRIVER_REGEX}" \
+      "${DRIVER_DELIM_REGEX}"
 
-    if ! get_kernel_cmdline_iommu_driver; then
+    static_vfio_src_sanitize_delim \
+      "${vfio_pci_driver_delim}" \
+      "${HARDWARE_ID_REGEX}" \
+      "${HARDWARE_ID_DELIM_REGEX}"
+
+    static_vfio_src_sanitize_delim \
+      "${vfio_pci_hardware_id_delim}" \
+      "${HARDWARE_ID_REGEX}" \
+      "${HARDWARE_ID_DELIM_REGEX}"
+
+    if ! grub_vfio_src_get_kernel_cmdline_iommu_driver; then
       return 1
     fi
 
     if "${USE_GRUB}"; then
-      if ! write_grub \
+      if ! static_vfio_src_write_grub \
+          "${cmdline_prefix}" \
           "${vfio_pci_driver_delim}" \
           "${vfio_pci_hardware_id_delim}" \
           "${pci_stub_hardware_id_delim}" \
-        || ! update_grub; then
+        || ! static_vfio_src_update_grub; then
         print_fail_to_log \
           "Failed to install static VFIO setup via GRUB command line."
 
@@ -110,21 +138,33 @@ CPU_VENDOR_ID="$( \
       fi
 
     else
-      if ! write_initramfs \
+      if ! static_vfio_src_write_initramfs \
           "${vfio_pci_driver_delim}" \
           "${vfio_pci_hardware_id_delim}" \
           "${pci_stub_hardware_id_delim}" \
-        || ! write_modprobe_blacklists \
+        || ! static_vfio_src_write_modprobe_blacklists \
           "${vfio_pci_driver_delim}" \
-        || ! write_modprobe_vfio \
+        || ! static_vfio_src_write_modprobe_vfio \
           "${vfio_pci_driver_delim}" \
           "${vfio_pci_hardware_id_delim}" \
           "${pci_stub_hardware_id_delim}" \
-        || ! write_modules \
+        || ! static_vfio_src_write_modules \
           "${vfio_pci_driver_delim}" \
-        || ! update_initramfs; then
+        || ! static_vfio_src_update_initramfs; then
         print_fail_to_log \
           "Failed to install static VFIO setup via various configuration files."
+
+        return 1
+      fi
+
+      if ! static_vfio_src_write_grub \
+          "${cmdline_prefix}" \
+          "${vfio_pci_driver_delim}" \
+          "${vfio_pci_hardware_id_delim}" \
+          "${pci_stub_hardware_id_delim}" \
+        || ! static_vfio_src_update_grub; then
+        print_fail_to_log \
+          "Failed to update GRUB command line."
 
         return 1
       fi
@@ -155,36 +195,51 @@ CPU_VENDOR_ID="$( \
 
   #
   # $1: the delimited string.
+  # $2: the element regex.
+  # $3: the comma delimited list regex.
   #
-  function static_vfio_src_sanitize_hardware_id_delim
+  function static_vfio_src_sanitize_delim
   {
     if [[ "${1}" == "" ]]; then
       return 1
     fi
 
+    if [[ "${2}" == "" ]]; then
+      return 1
+    fi
+
+    if [[ "${3}" == "" ]]; then
+      return 1
+    fi
+
     local -n delim="${1}"
+    regex="${2}"
+    delim_regex="${3}"
+
+    if ! [[ "${delim}" =~ "${delim_regex}" ]]; then
+      read \
+        -r \
+        -a list \
+        <<< "${delim}"
+
+      delim=""
+
+      for item in "${list[@]}"; do
+        if ! [[ "${item}" =~ "${regex}" ]]; then
+          continue
+        fi
+
+        delim+="${item}${DELIM}"
+      done
+    fi
 
     last_char="$( \
       echo \
       ${delim:${#delim}-1} \
     )"
 
-    last_element="$( \
-      echo \
-        "${delim}" \
-      | awk \
-        -F "${DELIM}" \
-        '{print $NF}' \
-    )"
-
-    if [[ "${last_char}" != "${DELIM}" ]] \
-      && [[ "${last_element}" =~ "${HARDWARE_ID_REGEX}" ]]; then
-      delim="$( \
-        echo \
-          "${delim}" \
-        | sed \
-          's/, [^,]*$//' \
-      )"
+    if [[ "${last_char}" == "${DELIM}" ]]; then
+      delim="${delim:${#delim}-1}"
     fi
   }
 
@@ -220,12 +275,23 @@ CPU_VENDOR_ID="$( \
   }
 
   #
-  # $1: the delimited string of blacklisted device drivers.
-  # $2: the delimited string of device IDs to use "vfio-pci".
-  # $3: the delimited string of device IDs to use "pci-stub".
+  # $1: the whitespace delimited string of command lines.
+  # $2: the comma delimited string of blacklisted device drivers.
+  # $3: the comma delimited string of device IDs to use "vfio-pci".
+  # $4: the comma delimited string of device IDs to use "pci-stub".
   #
   function static_vfio_src_write_grub
   {
+    cmdline_prefix="${1}"
+
+    if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
+      && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
+      shift
+
+    else
+      cmdline_prefix=""
+    fi
+
     vfio_pci_driver_delim="${1}"
     vfio_pci_hardware_id_delim="${2}"
     pci_stub_hardware_id_delim="${3}"
@@ -233,7 +299,7 @@ CPU_VENDOR_ID="$( \
     cmdline="modprobe.blacklist=${vfio_pci_driver_delim} "
     cmdline+="pci_stub.ids=${pci_stub_hardware_id_delim} "
     cmdline+="vfio_pci.ids=${vfio_pci_hardware_id_delim} "
-    cmdline="${CMDLINE_PREFIX}${cmdline::-1}"
+    cmdline="${CMDLINE_PREFIX}${cmdline_prefix}${cmdline::-1}"
 
     destination_path="/etc/default/grub"
     line_to_match="GRUB_CMDLINE_LINUX_DEFAULT="
@@ -249,9 +315,9 @@ CPU_VENDOR_ID="$( \
   }
 
   #
-  # $1: the delimited string of blacklisted device drivers.
-  # $2: the delimited string of device IDs to use "vfio-pci".
-  # $3: the delimited string of device IDs to use "pci-stub".
+  # $1: the comma delimited string of blacklisted device drivers.
+  # $2: the comma delimited string of device IDs to use "vfio-pci".
+  # $3: the comma delimited string of device IDs to use "pci-stub".
   #
   function static_vfio_src_write_initramfs
   {
@@ -304,7 +370,7 @@ CPU_VENDOR_ID="$( \
   }
 
   #
-  # $1: the delimited string of blacklisted device drivers.
+  # $1: the comma delimited string of blacklisted device drivers.
   #
   function static_vfio_src_write_modprobe_blacklists
   {
@@ -335,9 +401,9 @@ CPU_VENDOR_ID="$( \
   }
 
   #
-  # $1: the delimited string of blacklisted device drivers.
-  # $2: the delimited string of device IDs to use "vfio-pci".
-  # $3: the delimited string of device IDs to use "pci-stub".
+  # $1: the comma delimited string of blacklisted device drivers.
+  # $2: the comma delimited string of device IDs to use "vfio-pci".
+  # $3: the comma delimited string of device IDs to use "pci-stub".
   #
   function static_vfio_src_write_modprobe_vfio
   {
@@ -394,7 +460,7 @@ CPU_VENDOR_ID="$( \
   }
 
   #
-  # $1: the delimited string of blacklisted device drivers.
+  # $1: the comma delimited string of blacklisted device drivers.
   #
   function static_vfio_src_write_modules
   {

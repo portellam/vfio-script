@@ -86,25 +86,32 @@ sudo bash installer.sh
                             configuration file. VFIO setup may be
                             created/destroyed on a Guest startup/shutdown.
 
-  -G, --grub=NUMS           Define one or more VFIO setup(s) as command line
+  -G, --grub                Define one or more VFIO setup(s) as command line
                             permutations; setup(s) are defined as individual
                             GRUB boot menu entries, where one permutation may be
                             chosen at Host machine startup.
                             Note: multiple GPUs on separate IOMMU groups will
                             create multiple VFIO setups.
-                            NUMS is a comma delimited list of positive non-zero
-                            numbers, which represent the number of kernel(s) to
-                            use per VFIO setup (sorted by newest to oldest).
-                            Note: to use all available, leave blank.
 
   -S, --static              Define a persistent VFIO setup by writing to
                             various configuration files.
 
-  --override                Override limits for features which may repeat a
-                            given command many times (limit is five (5)
-                            repetitions).
-                            Note: "--grub=9" may use nine (9) or less kernels,
-                            default is five (5) or less kernels.
+  -G|-S --cmdline=TEXT      Define the GRUB command line.
+                            Note: avoid escape characters (") and/or VFIO
+                            commands so as to prevent problems.
+                            TEXT is whitespace delimited text.
+
+  -G|-S --kernels=NUMS      Multiply the permutations by the number of
+                            available kernel(s) to use (sorted newest to
+                            oldest).
+                            Note: to use all available, leave blank.
+                            NUMS is a comma delimited list of positive non-zero
+                            numbers.
+
+  --allow-unsafe            Override safety limits. Override a maximum amount of
+                            permutations, and/or features which may repeat a
+                            given command many times.
+                            Note: safety limits are five (5) units each.
 
   Note: the following options may be avoided to allow a given VFIO setup to
   determine which devices to use or not.
@@ -141,6 +148,7 @@ sudo bash installer.sh
 ```
 
 #### TODO:
+- [ ] sanitize inputs.
 - [ ] add logic to undo changes for other setups, if a given one is chosen.
   - in other words, prior to install of a given setup, uninstall the rest.
 
