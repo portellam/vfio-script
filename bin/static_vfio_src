@@ -11,23 +11,39 @@
 
 #
 # TODO:
-# - [ ] if overwrite fails, restore from backup.
-# - [ ] on failure, undo changes.
 # - [ ] backup existing copy.
-# - [ ] restore from source.
+# - [ ] on failure, undo changes.
+# - [ ] use source copy before write.
 #
 
-SOURCE_ETC_PATH="${1}"
-USE_GRUB=false
-ALLOW_UNSAFE=false
+#region Sources
+  SOURCE_PATH="${1}"
+  shift
+  COLUMN_SIZE="$( tput cols )"
 
-if [[ "${2}" != "" ]]; then
-  USE_GRUB=true
-fi
+  source \
+    "${SOURCE_PATH}print_src" \
+    "${SOURCE_PATH}" \
+    "${COLUMN_SIZE}"
 
-if [[ "${3}" != "" ]]; then
-  ALLOW_UNSAFE=true
-fi
+#endregion
+
+#region Parameters
+  #region Input Parameters
+
+  SOURCE_ETC_PATH="${1}"
+  USE_GRUB=false
+  ALLOW_UNSAFE=false
+
+  if [[ "${2}" != "" ]]; then
+    USE_GRUB=true
+  fi
+
+  if [[ "${3}" != "" ]]; then
+    ALLOW_UNSAFE=true
+  fi
+
+  #endregion
 
 DELIM=","
 HARDWARE_ID_REGEX="^[a-zA-Z0-9]{4}:[a-zA-Z0-9]{4}$"
@@ -55,314 +71,349 @@ CPU_VENDOR_ID="$( \
     'END {print $3}' \
 )"
 
-function sanitize_hardware_id_delim
-{
-  if [[ "${1}" == "" ]]; then
-    return 1
-  fi
+  #endregion
 
-  local -n delim="${1}"
+#region Logic
 
-  last_char="$( \
-    echo \
-    ${delim:${#delim}-1} \
-  )"
+  #
+  # $1: the delimited string.
+  #
+  function sanitize_hardware_id_delim
+  {
+    if [[ "${1}" == "" ]]; then
+      return 1
+    fi
 
-  last_element="$( \
-    echo \
-      "${delim}" \
-    | awk \
-      -F "${DELIM}" \
-      '{print $NF}' \
-  )"
+    local -n delim="${1}"
 
-  if [[ "${last_char}" != "${DELIM}" ]] \
-    && [[ "${last_element}" =~ "${HARDWARE_ID_REGEX}" ]]; then
-    delim="$( \
+    last_char="$( \
+      echo \
+      ${delim:${#delim}-1} \
+    )"
+
+    last_element="$( \
       echo \
         "${delim}" \
-      | sed \
-        's/, [^,]*$//' \
+      | awk \
+        -F "${DELIM}" \
+        '{print $NF}' \
     )"
-  fi
-}
 
-function static_vfio_src_main
-{
-  vfio_pci_driver_delim="${1}"
-  vfio_pci_hardware_id_delim="${2}"
-  pci_stub_hardware_id_delim="${3}"
+    if [[ "${last_char}" != "${DELIM}" ]] \
+      && [[ "${last_element}" =~ "${HARDWARE_ID_REGEX}" ]]; then
+      delim="$( \
+        echo \
+          "${delim}" \
+        | sed \
+          's/, [^,]*$//' \
+      )"
+    fi
+  }
 
-  sanitize_hardware_id_delim "${pci_stub_hardware_id_delim}"
-  sanitize_hardware_id_delim "${vfio_pci_hardware_id_delim}"
+  #
+  # $1: the delimited string of blacklisted device drivers.
+  # $2: the delimited string of device IDs to use "vfio-pci".
+  # $3: the delimited string of device IDs to use "pci-stub".
+  #
+  function static_vfio_src_main
+  {
+    vfio_pci_driver_delim="${1}"
+    vfio_pci_hardware_id_delim="${2}"
+    pci_stub_hardware_id_delim="${3}"
 
-  if ! get_kernel_cmdline_iommu_driver; then
-    return 1
-  fi
+    sanitize_hardware_id_delim "${pci_stub_hardware_id_delim}"
+    sanitize_hardware_id_delim "${vfio_pci_hardware_id_delim}"
 
-  if "${USE_GRUB}"; then
-    if ! write_grub \
-        "${vfio_pci_driver_delim}" \
-        "${vfio_pci_hardware_id_delim}" \
-        "${pci_stub_hardware_id_delim}" \
-      || ! update_grub; then
+    if ! get_kernel_cmdline_iommu_driver; then
       return 1
     fi
 
-  else
-    if ! write_initramfs \
-        "${vfio_pci_driver_delim}" \
-        "${vfio_pci_hardware_id_delim}" \
-        "${pci_stub_hardware_id_delim}" \
-      || ! write_modprobe_blacklists \
-        "${vfio_pci_driver_delim}" \
-      || ! write_modprobe_vfio \
-        "${vfio_pci_driver_delim}" \
-        "${vfio_pci_hardware_id_delim}" \
-        "${pci_stub_hardware_id_delim}" \
-      || ! write_modules \
-        "${vfio_pci_driver_delim}" \
-      || ! update_initramfs; then
-      return 1
-    fi
-  fi
-}
-
-function get_kernel_cmdline_iommu_driver
-{
-  case "${CPU_VENDOR_ID}" in
-    *"amd"* )
-      CMDLINE_PREFIX="amd_iommu=on ${CMDLINE_PREFIX}" ;;
-
-    *"intel"* )
-      CMDLINE_PREFIX="intel_iommu=on ${CMDLINE_PREFIX}" ;;
-
-    * )
-      print_error_to_log "Unknown CPU vendor '${CPU_VENDOR_ID}'."
-
-      if "${ALLOW_UNSAFE}"; then
-        return 0
+    if "${USE_GRUB}"; then
+      if ! write_grub \
+          "${vfio_pci_driver_delim}" \
+          "${vfio_pci_hardware_id_delim}" \
+          "${pci_stub_hardware_id_delim}" \
+        || ! update_grub; then
+        return 1
       fi
 
-      return 1 ;;
-  esac
-}
+    else
+      if ! write_initramfs \
+          "${vfio_pci_driver_delim}" \
+          "${vfio_pci_hardware_id_delim}" \
+          "${pci_stub_hardware_id_delim}" \
+        || ! write_modprobe_blacklists \
+          "${vfio_pci_driver_delim}" \
+        || ! write_modprobe_vfio \
+          "${vfio_pci_driver_delim}" \
+          "${vfio_pci_hardware_id_delim}" \
+          "${pci_stub_hardware_id_delim}" \
+        || ! write_modules \
+          "${vfio_pci_driver_delim}" \
+        || ! update_initramfs; then
+        return 1
+      fi
+    fi
+  }
 
-function update_grub
-{
-  output="Updating GRUB"
-  print_output_to_log "${output}"
+  function get_kernel_cmdline_iommu_driver
+  {
+    case "${CPU_VENDOR_ID}" in
+      *"amd"* )
+        CMDLINE_PREFIX="amd_iommu=on ${CMDLINE_PREFIX}" ;;
 
-  if ! sudo \
-    update-grub; then
-    print_fail_to_log "${output}"
-    return 1
-  fi
+      *"intel"* )
+        CMDLINE_PREFIX="intel_iommu=on ${CMDLINE_PREFIX}" ;;
 
-  print_pass_to_log "${output}"
-}
+      * )
+        print_error_to_log "Unknown CPU vendor '${CPU_VENDOR_ID}'."
 
-function update_initramfs
-{
-  output="Updating initramfs"
-  print_output_to_log "${output}"
+        if "${ALLOW_UNSAFE}"; then
+          return 0
+        fi
 
-  if ! sudo \
-    update-initramfs \
-    -u \
-    -k \
-    all; then
-    print_fail_to_log "${output}"
-    return 1
-  fi
+        return 1 ;;
+    esac
+  }
 
-  print_pass_to_log "${output}"
-}
+  function update_grub
+  {
+    output="Updating GRUB"
+    print_output_to_log "${output}"
 
-function write_grub
-{
-  vfio_pci_driver_delim="${1}"
-  vfio_pci_hardware_id_delim="${2}"
-  pci_stub_hardware_id_delim="${3}"
+    if ! sudo \
+      update-grub; then
+      print_fail_to_log "${output}"
+      return 1
+    fi
 
-  cmdline="modprobe.blacklist=${vfio_pci_driver_delim} "
-  cmdline+="pci_stub.ids=${pci_stub_hardware_id_delim} "
-  cmdline+="vfio_pci.ids=${vfio_pci_hardware_id_delim} "
-  cmdline="${CMDLINE_PREFIX}${cmdline::-1}"
+    print_pass_to_log "${output}"
+  }
 
-  destination_path="/etc/default/grub"
-  line_to_match="GRUB_CMDLINE_LINUX_DEFAULT="
-  line_to_replace="${line_to_match}\"${cmdline}\""
+  function update_initramfs
+  {
+    output="Updating initramfs"
+    print_output_to_log "${output}"
 
-  if ! sed \
-    --in-place '/'"${line_to_match}"'/c\'"${line_to_replace}" \
-    "${destination_path}" \
-    &> /dev/null ; then
-    print_error_to_log "Failed to overwrite '${destination_path}'."
-    return 1
-  fi
-}
+    if ! sudo \
+      update-initramfs \
+      -u \
+      -k \
+      all; then
+      print_fail_to_log "${output}"
+      return 1
+    fi
 
-function write_initramfs
-{
-  vfio_pci_driver_delim="${1}"
-  vfio_pci_hardware_id_delim="${2}"
-  pci_stub_hardware_id_delim="${3}"
+    print_pass_to_log "${output}"
+  }
 
-  partial_path="initramfs-tools/modules"
-  source_path="${SOURCE_ETC_PATH}/${partial_path}"
-  destination_path="/etc/${partial_path}"
+  #
+  # $1: the delimited string of blacklisted device drivers.
+  # $2: the delimited string of device IDs to use "vfio-pci".
+  # $3: the delimited string of device IDs to use "pci-stub".
+  #
+  function write_grub
+  {
+    vfio_pci_driver_delim="${1}"
+    vfio_pci_hardware_id_delim="${2}"
+    pci_stub_hardware_id_delim="${3}"
 
-  read \
-    -r \
-    -a vfio_pci_driver_list \
-    <<< "${vfio_pci_driver_delim}"
+    cmdline="modprobe.blacklist=${vfio_pci_driver_delim} "
+    cmdline+="pci_stub.ids=${pci_stub_hardware_id_delim} "
+    cmdline+="vfio_pci.ids=${vfio_pci_hardware_id_delim} "
+    cmdline="${CMDLINE_PREFIX}${cmdline::-1}"
 
-  line_list=()
+    destination_path="/etc/default/grub"
+    line_to_match="GRUB_CMDLINE_LINUX_DEFAULT="
+    line_to_replace="${line_to_match}\"${cmdline}\""
 
-  for driver in "${vfio_pci_driver_list[@]}"; do
-    line_list+=( "blacklist ${driver}" )
-  done
-
-  if [[ ! -z "${pci_stub_hardware_id_delim}" ]]; then
-    hardware_id_delim="${pci_stub_hardware_id_delim},"
-  fi
-
-  if [[ ! -z "${vfio_pci_hardware_id_delim}" ]]; then
-    hardware_id_delim+="${vfio_pci_hardware_id_delim}"
-
-  else
-    hardware_id_delim="${hardware_id_delim::-1}"
-  fi
-
-  if ! echo \
-    -e \
-    "\n${line_list[*]}" \
-    >> "${destination_path}" \
-  || ! sed \
-    --in-place \
-      "/# options vfio_pci ids=*/c\options vfio_pci_ids=\"${hardware_id_delim}\"" \
-    "${destination_path}" \
-    &> /dev/null \
-  || ! sed \
-    --in-place "/# vfio_pci ids=*/c\vfio_pci_ids=\"${hardware_id_delim}\"" \
-    "${destination_path}" \
-    &> /dev/null; then
-    print_error_to_log "Failed to overwrite '${destination_path}'."
-    return 1
-  fi
-}
-
-function write_modprobe_blacklists
-{
-  vfio_pci_driver_delim="${1}"
-
-  read \
-    -r \
-    -a vfio_pci_driver_list \
-    <<< "${vfio_pci_driver_delim}"
-
-  partial_path="modprobe.d/pci-blacklists.conf"
-  source_path="${SOURCE_ETC_PATH}/${partial_path}"
-  destination_path="/etc/${partial_path}"
-
-  line_list=()
-
-  for driver in "${vfio_pci_driver_list[@]}"; do
-    line_list+=( "blacklist ${driver}" )
-  done
-
-  if ! echo \
-    -e \
-    "\n${line_list[*]}" \
-    >> "${destination_path}"; then
-    print_error_to_log "Failed to overwrite '${destination_path}'."
-    return 1
-  fi
-}
-
-function write_modprobe_vfio
-{
-  vfio_pci_driver_delim="${1}"
-  vfio_pci_hardware_id_delim="${2}"
-  pci_stub_hardware_id_delim="${3}"
-
-  read \
-    -r \
-    -a vfio_pci_driver_list \
-    <<< "${vfio_pci_driver_delim}"
-
-  partial_path="modprobe.d/vfio.conf"
-  source_path="${SOURCE_ETC_PATH}/${partial_path}"
-  destination_path="/etc/${partial_path}"
-
-  if [[ ! -z "${pci_stub_hardware_id_delim}" ]]; then
-    hardware_id_delim="${pci_stub_hardware_id_delim},"
-  fi
-
-  if [[ ! -z "${vfio_pci_hardware_id_delim}" ]]; then
-    hardware_id_delim+="${vfio_pci_hardware_id_delim}"
-
-  else
-    hardware_id_delim="${hardware_id_delim::-1}"
-  fi
-
-  if ! sed \
-    --in-place \
-      "/# options vfio_pci ids=*/c\options vfio_pci ids=\"${hardware_id_delim}\"" \
-    "${destination_path}" \
-    &> /dev/null; then
-    print_error_to_log "Failed to overwrite '${destination_path}'."
-    return 1
-  fi
-
-  line_list=()
-
-  for driver in "${vfio_pci_driver_list[@]}"; do
-    line_list=(
-      "softdep ${driver} pre: ${VFIO_PCI_DRIVER}"
-      "${driver}"
-    )
-  done
-
-  for line in "${line_list[@]}"; do
     if ! sed \
-      --in-place "23i ${line}" \
-      "${INITRAMFS_MODULES_DEST_PATH}"; then
+      --in-place '/'"${line_to_match}"'/c\'"${line_to_replace}" \
+      "${destination_path}" \
+      &> /dev/null ; then
       print_error_to_log "Failed to overwrite '${destination_path}'."
       return 1
     fi
-  done
-}
+  }
 
-function write_modules
-{
-  vfio_pci_driver_delim="${1}"
+  #
+  # $1: the delimited string of blacklisted device drivers.
+  # $2: the delimited string of device IDs to use "vfio-pci".
+  # $3: the delimited string of device IDs to use "pci-stub".
+  #
+  function write_initramfs
+  {
+    vfio_pci_driver_delim="${1}"
+    vfio_pci_hardware_id_delim="${2}"
+    pci_stub_hardware_id_delim="${3}"
 
-  read \
-    -r \
-    -a vfio_pci_driver_list \
-    <<< "${vfio_pci_driver_delim}"
+    partial_path="initramfs-tools/modules"
+    source_path="${SOURCE_ETC_PATH}/${partial_path}"
+    destination_path="/etc/${partial_path}"
 
-  partial_path="modules"
-  destination_path="/etc/${partial_path}"
+    read \
+      -r \
+      -a vfio_pci_driver_list \
+      <<< "${vfio_pci_driver_delim}"
 
-  if ! sed \
-    --in-place "/# vfio_pci ids=*/c\vfio_pci_ids=\"${HWID_DELIM}\"" \
-    "${destination_path}" \
-    &> /dev/null; then
-    print_error_to_log "Failed to overwrite '${destination_path}'."
-    return 1
-  fi
+    line_list=()
 
-  for driver in "${vfio_pci_driver_list[@]}"; do
-    line="softdep ${driver} pre: ${VFIO_PCI_DRIVER}"
+    for driver in "${vfio_pci_driver_list[@]}"; do
+      line_list+=( "blacklist ${driver}" )
+    done
 
-    if ! sed \
-      --in-place "7i ${line}" \
-      "${destination_path}"; then
+    if [[ ! -z "${pci_stub_hardware_id_delim}" ]]; then
+      hardware_id_delim="${pci_stub_hardware_id_delim},"
+    fi
+
+    if [[ ! -z "${vfio_pci_hardware_id_delim}" ]]; then
+      hardware_id_delim+="${vfio_pci_hardware_id_delim}"
+
+    else
+      hardware_id_delim="${hardware_id_delim::-1}"
+    fi
+
+    if ! echo \
+      -e \
+      "\n${line_list[*]}" \
+      >> "${destination_path}" \
+    || ! sed \
+      --in-place \
+        "/# options vfio_pci ids=*/c\options vfio_pci_ids=\"${hardware_id_delim}\"" \
+      "${destination_path}" \
+      &> /dev/null \
+    || ! sed \
+      --in-place "/# vfio_pci ids=*/c\vfio_pci_ids=\"${hardware_id_delim}\"" \
+      "${destination_path}" \
+      &> /dev/null; then
       print_error_to_log "Failed to overwrite '${destination_path}'."
       return 1
     fi
-  done
-}
+  }
+
+  #
+  # $1: the delimited string of blacklisted device drivers.
+  #
+  function write_modprobe_blacklists
+  {
+    vfio_pci_driver_delim="${1}"
+
+    read \
+      -r \
+      -a vfio_pci_driver_list \
+      <<< "${vfio_pci_driver_delim}"
+
+    partial_path="modprobe.d/pci-blacklists.conf"
+    source_path="${SOURCE_ETC_PATH}/${partial_path}"
+    destination_path="/etc/${partial_path}"
+
+    line_list=()
+
+    for driver in "${vfio_pci_driver_list[@]}"; do
+      line_list+=( "blacklist ${driver}" )
+    done
+
+    if ! echo \
+      -e \
+      "\n${line_list[*]}" \
+      >> "${destination_path}"; then
+      print_error_to_log "Failed to overwrite '${destination_path}'."
+      return 1
+    fi
+  }
+
+  #
+  # $1: the delimited string of blacklisted device drivers.
+  # $2: the delimited string of device IDs to use "vfio-pci".
+  # $3: the delimited string of device IDs to use "pci-stub".
+  #
+  function write_modprobe_vfio
+  {
+    vfio_pci_driver_delim="${1}"
+    vfio_pci_hardware_id_delim="${2}"
+    pci_stub_hardware_id_delim="${3}"
+
+    read \
+      -r \
+      -a vfio_pci_driver_list \
+      <<< "${vfio_pci_driver_delim}"
+
+    partial_path="modprobe.d/vfio.conf"
+    source_path="${SOURCE_ETC_PATH}/${partial_path}"
+    destination_path="/etc/${partial_path}"
+
+    if [[ ! -z "${pci_stub_hardware_id_delim}" ]]; then
+      hardware_id_delim="${pci_stub_hardware_id_delim},"
+    fi
+
+    if [[ ! -z "${vfio_pci_hardware_id_delim}" ]]; then
+      hardware_id_delim+="${vfio_pci_hardware_id_delim}"
+
+    else
+      hardware_id_delim="${hardware_id_delim::-1}"
+    fi
+
+    if ! sed \
+      --in-place \
+        "/# options vfio_pci ids=*/c\options vfio_pci ids=\"${hardware_id_delim}\"" \
+      "${destination_path}" \
+      &> /dev/null; then
+      print_error_to_log "Failed to overwrite '${destination_path}'."
+      return 1
+    fi
+
+    line_list=()
+
+    for driver in "${vfio_pci_driver_list[@]}"; do
+      line_list=(
+        "softdep ${driver} pre: ${VFIO_PCI_DRIVER}"
+        "${driver}"
+      )
+    done
+
+    for line in "${line_list[@]}"; do
+      if ! sed \
+        --in-place "23i ${line}" \
+        "${INITRAMFS_MODULES_DEST_PATH}"; then
+        print_error_to_log "Failed to overwrite '${destination_path}'."
+        return 1
+      fi
+    done
+  }
+
+  #
+  # $1: the delimited string of blacklisted device drivers.
+  #
+  function write_modules
+  {
+    vfio_pci_driver_delim="${1}"
+
+    read \
+      -r \
+      -a vfio_pci_driver_list \
+      <<< "${vfio_pci_driver_delim}"
+
+    partial_path="modules"
+    destination_path="/etc/${partial_path}"
+
+    if ! sed \
+      --in-place "/# vfio_pci ids=*/c\vfio_pci_ids=\"${HWID_DELIM}\"" \
+      "${destination_path}" \
+      &> /dev/null; then
+      print_error_to_log "Failed to overwrite '${destination_path}'."
+      return 1
+    fi
+
+    for driver in "${vfio_pci_driver_list[@]}"; do
+      line="softdep ${driver} pre: ${VFIO_PCI_DRIVER}"
+
+      if ! sed \
+        --in-place "7i ${line}" \
+        "${destination_path}"; then
+        print_error_to_log "Failed to overwrite '${destination_path}'."
+        return 1
+      fi
+    done
+  }
+
+#endregion
