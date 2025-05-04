@@ -86,9 +86,10 @@ sudo bash installer.sh
                             configuration file. VFIO setup may be
                             created/destroyed on a Guest startup/shutdown.
 
-  -G, --grub=NUMS           Define one or more VFIO setup(s) as command line(s);
-                            setup(s) are defined as GRUB boot menu entries,
-                            where one may be chosen at Host machine startup.
+  -G, --grub=NUMS           Define one or more VFIO setup(s) as command line
+                            permutations; setup(s) are defined as individual
+                            GRUB boot menu entries, where one permutation may be
+                            chosen at Host machine startup.
                             Note: multiple GPUs on separate IOMMU groups will
                             create multiple VFIO setups.
                             NUMS is a comma delimited list of positive non-zero
@@ -140,6 +141,13 @@ sudo bash installer.sh
 ```
 
 #### TODO:
+- [ ] add logic to undo changes for other setups, if a given one is chosen.
+  - in other words, prior to install of a given setup, uninstall the rest.
+
+- [ ] `parse-iommu-devices`: add XML support!
+  - in the mean time, warn the user if a VFIO setup is detected, and quit.
+  - allow for override.
+
 - [ ] add exclusion arguments (drivers, hardware IDs, to ignore).
 - [ ] add logic to define a safe maximum (and arguments to override) for the following:
   - number of linux kernels to use for GRUB menu entries (example: five kernels)
