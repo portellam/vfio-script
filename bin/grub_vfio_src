@@ -53,11 +53,11 @@ CMDLINE_PREFIX="${CMDLINE_DEFAULTS} ${CMDLINE_PRIVACY}"
 CMDLINE_PREFIX+="${CMDLINE_POWER_MANAGEMENT} ${CMDLINE_EARLY_LOAD_MODULES}"
 CMDLINE_PREFIX+="${CMDLINE_UNSET_FRAMEBUFFER} ${CMDLINE_FOR_WINDOWS10}"
 
+NOVIDEO_DRIVER_DELIM=""
+NOVIDEO_HARDWARE_ID_DELIM=""
 VIDEO_GROUP_DRIVER_DELIM_LIST=()
 VIDEO_GROUP_HARDWARE_ID_DELIM_LIST=()
 VIDEO_IOMMU_GROUP_LIST=()
-NOVIDEO_DRIVER_DELIM=""
-NOVIDEO_HARDWARE_ID_DELIM=""
 
 #endregion
 
@@ -145,7 +145,7 @@ NOVIDEO_HARDWARE_ID_DELIM=""
   function grub_vfio_src_get_video_delim_lists
   {
     index=1
-    max_index=5
+    max_index="${SAFE_MAX}"
     output=""
 
     if "${ALLOW_UNSAFE}"; then
@@ -187,7 +187,11 @@ NOVIDEO_HARDWARE_ID_DELIM=""
 
   function grub_vfio_src_set_grub_entries
     {
-      if ! sed -i "s/+'/-'/g" "${GRUB_CUSTOM_DEST_PATH}" &> /dev/null; then
+      if ! sed \
+        -i \
+        "s/+'/-'/g" \
+        "${GRUB_CUSTOM_DEST_PATH}" \
+        &> /dev/null; then
         print_error_to_log "Failed to enable entries for GRUB proxy file."
         return 1
       fi
@@ -195,7 +199,11 @@ NOVIDEO_HARDWARE_ID_DELIM=""
 
     function grub_vfio_src_unset_grub_entries
     {
-      if ! sed -i "s/+'/-'/g" "${GRUB_CUSTOM_DEST_PATH}" &> /dev/null; then
+      if ! sed \
+        -i \
+        "s/+'/-'/g" \
+        "${GRUB_CUSTOM_DEST_PATH}" \
+        &> /dev/null; then
         print_error_to_log "Failed to disable entries for GRUB proxy file."
         return 1
       fi
@@ -229,7 +237,11 @@ NOVIDEO_HARDWARE_ID_DELIM=""
       cmdline_prefix=""
     fi
 
-    max_parsed_kernels=5
+    max_parsed_kernels="${SAFE_MAX}"
+
+    if "${ALLOW_UNSAFE}"; then
+      max_parsed_kernels="${1}"
+    fi
 
     if ! "${ALLOW_UNSAFE}" \
       && [[ "${1}" -le "${SAFE_MAX}" ]]; then
@@ -237,6 +249,10 @@ NOVIDEO_HARDWARE_ID_DELIM=""
     fi
 
     default_index=0
+
+    if "${ALLOW_UNSAFE}"; then
+      default_index="${2}"
+    fi
 
     if ! "${ALLOW_UNSAFE}" \
       && [[ "${2}" -le "${SAFE_MAX}" ]]; then

@@ -47,8 +47,6 @@
 
   #endregion
 
-#endregion
-
 DELIM=","
 DRIVER_REGEX='^[a-zA-Z0-9_-]+$'
 DRIVER_DELIM_REGEX='^([a-zA-Z_-]+)(,[a-zA-Z_-]+)*$'
@@ -68,17 +66,7 @@ CMDLINE_PREFIX="${CMDLINE_DEFAULTS} ${CMDLINE_PRIVACY}"
 CMDLINE_PREFIX+="${CMDLINE_POWER_MANAGEMENT} ${CMDLINE_EARLY_LOAD_MODULES}"
 CMDLINE_PREFIX+="${CMDLINE_UNSET_FRAMEBUFFER} ${CMDLINE_FOR_WINDOWS10}"
 
-CPU_VENDOR_ID="$( \
-  lscpu \
-  | grep \
-    --extended-regexp \
-    --ignore-case \
-    Vendor \
-  | awk \
-    'END {print $3}' \
-)"
-
-  #endregion
+#endregion
 
 #region Logic
 
@@ -175,7 +163,17 @@ CPU_VENDOR_ID="$( \
 
   function static_vfio_src_get_kernel_cmdline_iommu_driver
   {
-    case "${CPU_VENDOR_ID}" in
+    cpu_vendor_id="$( \
+      lscpu \
+      | grep \
+        --extended-regexp \
+        --ignore-case \
+        Vendor \
+      | awk \
+        'END {print $3}' \
+    )"
+
+    case "${cpu_vendor_id}" in
       *"amd"* )
         CMDLINE_PREFIX="amd_iommu=on ${CMDLINE_PREFIX}" ;;
 
@@ -183,7 +181,7 @@ CPU_VENDOR_ID="$( \
         CMDLINE_PREFIX="intel_iommu=on ${CMDLINE_PREFIX}" ;;
 
       * )
-        print_error_to_log "Unknown CPU vendor '${CPU_VENDOR_ID}'."
+        print_error_to_log "Unknown CPU vendor '${cpu_vendor_id}'."
 
         if "${ALLOW_UNSAFE}"; then
           return 0
