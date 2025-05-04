@@ -1,0 +1,243 @@
+#!/bin/false
+
+#
+# Filename:       grub_vfio_src
+# Version:        0.0.1
+# Description:    Define one or more VFIO setup(s), as distinct GRUB menu
+#                 entries.
+# Author(s):      Alex Portell <github.com/portellam>
+# Maintainer(s):  Alex Portell <github.com/portellam>
+#
+
+#region Sources
+
+  SOURCE_PATH="${1}"
+  shift
+  COLUMN_SIZE="$( tput cols )"
+
+  source \
+    "${SOURCE_PATH}print_src" \
+    "${SOURCE_PATH}" \
+    "${COLUMN_SIZE}"
+
+#endregion
+
+#region Parameters
+
+  #region Input Parameters
+
+  ALLOW_UNSAFE=false
+
+  if [[ "${1}" != "" ]]; then
+    ALLOW_UNSAFE=true
+  fi
+
+  #endregion
+
+#endregion
+
+DELIM=","
+EXECUTABLE="parse-iommu-devices"
+HARDWARE_ID_REGEX="^[a-zA-Z0-9]{4}:[a-zA-Z0-9]{4}$"
+VFIO_PCI_DRIVER="vfio-pci"
+
+CMDLINE_DEFAULTS="quiet splash"
+CMDLINE_EARLY_LOAD_MODULES="rd.driver.pre=${VFIO_PCI_DRIVER}"
+CMDLINE_EARLY_LOAD_MODULES+="rd.modules-load=${VFIO_PCI_DRIVER}"
+CMDLINE_FOR_WINDOWS10="kvm.ignore_msrs=1"
+CMDLINE_POWER_MANAGEMENT="acpi=force apm=power_off pcie_aspm=off"
+CMDLINE_PRIVACY="rfkill.default_state=1 systemd.restore_state=0"
+CMDLINE_UNSET_FRAMEBUFFER="video=efifb:off,vesafb:off"
+
+CMDLINE_PREFIX="${CMDLINE_DEFAULTS} ${CMDLINE_PRIVACY}"
+CMDLINE_PREFIX+="${CMDLINE_POWER_MANAGEMENT} ${CMDLINE_EARLY_LOAD_MODULES}"
+CMDLINE_PREFIX+="${CMDLINE_UNSET_FRAMEBUFFER} ${CMDLINE_FOR_WINDOWS10}"
+
+CPU_VENDOR_ID="$( \
+  lscpu \
+  | grep \
+    --extended-regexp \
+    --ignore-case \
+    Vendor \
+  | awk \
+    'END {print $3}' \
+)"
+
+VIDEO_GROUP_DRIVER_DELIM_LIST=()
+VIDEO_GROUP_HARDWARE_ID_DELIM_LIST=()
+VIDEO_IOMMU_GROUP_LIST=()
+NOVIDEO_DRIVER_DELIM=""
+NOVIDEO_HARDWARE_ID_DELIM=""
+
+#endregion
+
+#region Logic
+  function grub_vfio_src_main
+  {
+    if ! get_kernel_cmdline_iommu_driver; then
+      return 1
+    fi
+
+    if ! write_grub \
+      || ! update_grub; then
+      print_fail_to_log "Failed to install a GRUB VFIO setup."
+      return 1
+    fi
+
+    print_pass_to_log "Installed a GRUB VFIO setup."
+  }
+
+  function grub_vfio_src_get_kernel_cmdline_iommu_driver
+  {
+    case "${CPU_VENDOR_ID}" in
+      *"amd"* )
+        CMDLINE_PREFIX="amd_iommu=on ${CMDLINE_PREFIX}" ;;
+
+      *"intel"* )
+        CMDLINE_PREFIX="intel_iommu=on ${CMDLINE_PREFIX}" ;;
+
+      * )
+        print_error_to_log "Unknown CPU vendor '${CPU_VENDOR_ID}'."
+
+        if "${ALLOW_UNSAFE}"; then
+          return 0
+        fi
+
+        return 1 ;;
+    esac
+  }
+
+  function grub_vfio_src_get_non_video_delims
+  {
+    video_iommu_group_delim=$( \
+      IFS=${DELIM}; \
+      echo "${VIDEO_IOMMU_GROUP_LIST[*]}" \
+    )
+
+    names_to_ignore_delim="ether"
+
+    output="$( \
+      eval \
+        "${EXECUTABLE}" \
+        --ignore-group ${video_iommu_group_delim} \
+        --ignore-name ${names_to_ignore_delim} \
+        --pcie
+    )"
+
+    NOVIDEO_HARDWARE_ID_DELIM+="${output[0]}"
+    NOVIDEO_DRIVER_DELIM+="${output[1]}"
+  }
+
+  function grub_vfio_src_get_video_delim_lists
+  {
+    index=1
+    max_index=5
+    output=""
+
+    if "${ALLOW_UNSAFE}"; then
+      max_index=128
+    fi
+
+    while [[ "${index}" -le "${max_index}" ]]; do
+      output="$( \
+        eval \
+          "${EXECUTABLE}" \
+          --graphics \
+          "${index}"
+      )"
+
+      if [[ "${output}" == "" ]]; then
+        break
+      fi
+
+      VIDEO_GROUP_HARDWARE_ID_DELIM_LIST+=( "${output[0]}" )
+      VIDEO_GROUP_DRIVER_DELIM_LIST+=( "${output[1]}" )
+      VIDEO_IOMMU_GROUP_LIST+=( "${output[2]}" )
+      (( index++ ))
+    done
+  }
+
+  function grub_vfio_src_update_grub
+  {
+    output="Updating GRUB"
+    print_output_to_log "${output}"
+
+    if ! sudo \
+      update-grub; then
+      print_fail_to_log "${output}"
+      return 1
+    fi
+
+    print_pass_to_log "${output}"
+  }
+
+  function grub_vfio_src_set_grub_entries
+    {
+      if ! sed -i "s/+'/-'/g" "${GRUB_CUSTOM_DEST_PATH}" &> /dev/null; then
+        print_error_to_log "Failed to enable entries for GRUB proxy file."
+        return 1
+      fi
+    }
+
+    function grub_vfio_src_unset_grub_entries
+    {
+      if ! sed -i "s/+'/-'/g" "${GRUB_CUSTOM_DEST_PATH}" &> /dev/null; then
+        print_error_to_log "Failed to disable entries for GRUB proxy file."
+        return 1
+      fi
+    }
+
+  function grub_vfio_src_verify_dependencies
+  {
+    if ! command \
+      -v \
+      "${EXECUTABLE}" \
+      &> /dev/null; then
+      print_error_to_log "Cannot continue. Missing '${EXECUTABLE}'."
+      return 1
+    fi
+  }
+
+  function grub_vfio_src_write_grub
+  {
+    vfio_pci_driver_delim="${1}"
+    vfio_pci_hardware_id_delim="${2}"
+    pci_stub_hardware_id_delim="${3}"
+
+    cmdline="modprobe.blacklist=${vfio_pci_driver_delim} "
+    cmdline+="pci_stub.ids=${pci_stub_hardware_id_delim} "
+    cmdline+="vfio_pci.ids=${vfio_pci_hardware_id_delim} "
+    cmdline="${CMDLINE_PREFIX}${cmdline::-1}"
+
+    destination_path="/etc/default/grub"
+    line_to_match="GRUB_CMDLINE_LINUX_DEFAULT="
+    line_to_replace="${line_to_match}\"${cmdline}\""
+
+    if ! sed \
+      --in-place '/'"${line_to_match}"'/c\'"${line_to_replace}" \
+      "${destination_path}" \
+      &> /dev/null ; then
+      print_error_to_log "Failed to overwrite '${destination_path}'."
+      return 1
+    fi
+
+
+    GRUB_CUSTOM_FILE_CONTENTS+=(
+      "menuentry \"${grub_menu_entry_title}\"{"
+      # "\tload_video"
+      # "insmod gzio"
+      # "if [ x\$grub_platform = xxen ]; then insmod xzio; insmod lzopio; fi"
+      # "insmod part_gpt"
+      "\tinsmod ${system_fstype}"
+      "\tset root='/dev/disk/by-uuid/${system_uuid}'"
+      "\t"'if [ x$feature_platform_search_hint = xy ]; then'"\n\t\t"'search --no-floppy --fs-uuid --set=root '"${system_uuid}\n\t"'fi'
+      "\techo  'Loading ${system_os} ${kernel} ...'"
+      "\tlinux   /boot/vmlinuz-${kernel} root=UUID=${system_uuid} ${grub_cmdline_temp}"
+      "\tinitrd  /boot/initrd.img-${kernel}"
+      "\techo  \"VFIO w/o IOMMU '${iommu_group_id}', Video w/ '${this_iommu_group_vga_name}'\""
+      "}"
+      ""
+    )
+  }
+
+#endregion
