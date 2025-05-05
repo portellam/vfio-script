@@ -93,10 +93,10 @@ CMDLINE_PREFIX+="${CMDLINE_UNSET_FRAMEBUFFER} ${CMDLINE_FOR_WINDOWS10}"
 #region Logic
 
 #
-# $1: the whitespace delimited string of command lines.
-# $2: the comma delimited string of blacklisted device drivers.
-# $3: the comma delimited string of device IDs to use "vfio-pci".
-# $4: the comma delimited string of device IDs to use "pci-stub".
+# $1 : the whitespace delimited string of command lines.
+# $2 : the comma delimited string of blacklisted device drivers.
+# $3 : the comma delimited string of device IDs to use "vfio-pci".
+# $4 : the comma delimited string of device IDs to use "pci-stub".
 #
 function static_vfio_src_main
 {
@@ -245,9 +245,9 @@ function static_vfio_src_get_kernel_cmdline_iommu_driver
 }
 
 #
-# $1: the delimited string.
-# $2: the element regex.
-# $3: the comma delimited list regex.
+# $1 : the delimited string.
+# $2 : the element regex.
+# $3 : the comma delimited list regex.
 #
 function static_vfio_src_sanitize_delim
 {
@@ -326,10 +326,10 @@ function static_vfio_src_update_initramfs
 }
 
 #
-# $1: the whitespace delimited string of command lines.
-# $2: the comma delimited string of blacklisted device drivers.
-# $3: the comma delimited string of device IDs to use "vfio-pci".
-# $4: the comma delimited string of device IDs to use "pci-stub".
+# $1 : the whitespace delimited string of command lines.
+# $2 : the comma delimited string of blacklisted device drivers.
+# $3 : the comma delimited string of device IDs to use "vfio-pci".
+# $4 : the comma delimited string of device IDs to use "pci-stub".
 #
 function static_vfio_src_write_grub
 {
@@ -366,9 +366,9 @@ function static_vfio_src_write_grub
 }
 
 #
-# $1: the comma delimited string of blacklisted device drivers.
-# $2: the comma delimited string of device IDs to use "vfio-pci".
-# $3: the comma delimited string of device IDs to use "pci-stub".
+# $1 : the comma delimited string of blacklisted device drivers.
+# $2 : the comma delimited string of device IDs to use "vfio-pci".
+# $3 : the comma delimited string of device IDs to use "pci-stub".
 #
 function static_vfio_src_write_initramfs
 {
@@ -421,7 +421,7 @@ function static_vfio_src_write_initramfs
 }
 
 #
-# $1: the comma delimited string of blacklisted device drivers.
+# $1 : the comma delimited string of blacklisted device drivers.
 #
 function static_vfio_src_write_modprobe_blacklists
 {
@@ -452,9 +452,9 @@ function static_vfio_src_write_modprobe_blacklists
 }
 
 #
-# $1: the comma delimited string of blacklisted device drivers.
-# $2: the comma delimited string of device IDs to use "vfio-pci".
-# $3: the comma delimited string of device IDs to use "pci-stub".
+# $1 : the comma delimited string of blacklisted device drivers.
+# $2 : the comma delimited string of device IDs to use "vfio-pci".
+# $3 : the comma delimited string of device IDs to use "pci-stub".
 #
 function static_vfio_src_write_modprobe_vfio
 {
@@ -511,7 +511,7 @@ function static_vfio_src_write_modprobe_vfio
 }
 
 #
-# $1: the comma delimited string of blacklisted device drivers.
+# $1 : the comma delimited string of blacklisted device drivers.
 #
 function static_vfio_src_write_modules
 {

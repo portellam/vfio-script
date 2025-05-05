@@ -76,8 +76,8 @@ VIDEO_IOMMU_GROUP_LIST=()
 #region Logic
 
 #
-# $1: the whitespace delimited string of command lines.
-# $2: the comma delimited list of IOMMU groups to exclude.
+# $1 : the whitespace delimited string of command lines.
+# $2 : the comma delimited list of IOMMU groups to exclude.
 #
 function grub_vfio_src_main
 {
@@ -159,7 +159,7 @@ function grub_vfio_src_get_kernel_cmdline_iommu_driver
 }
 
 #
-# $1: the comma delimited list of IOMMU groups to exclude.
+# $1 : the comma delimited list of IOMMU groups to exclude.
 #
 function grub_vfio_src_get_non_video_delims
 {
@@ -196,7 +196,7 @@ function grub_vfio_src_get_non_video_delims
 }
 
 #
-# $1: the comma delimited list of IOMMU groups to exclude.
+# $1 : the comma delimited list of IOMMU groups to exclude.
 #
 function grub_vfio_src_get_video_delim_lists
 {
@@ -269,7 +269,7 @@ function grub_vfio_src_set_grub_entries
 }
 
 #
-# $1: the destination path.
+# $1 : the destination path.
 #
 function grub_vfio_src_unset_grub_entries
 {
@@ -301,10 +301,10 @@ function grub_vfio_src_verify_dependencies
 }
 
 #
-# $1: the whitespace delimited string of command lines.
-# $2: the destination path.
-# $3: the max number of kernels.
-# $4: the default boot video device group index.
+# $1 : the whitespace delimited string of command lines.
+# $2 : the destination path.
+# $3 : the max number of kernels.
+# $4 : the default boot video device group index.
 #
 function grub_vfio_src_write_most_grub
 {
@@ -499,16 +499,16 @@ function grub_vfio_src_write_most_grub
 }
 
 #
-# $1: the reference.
-# $2: the whitespace delimited string of command lines.
-# $3: the IOMMU group ID.
-# $4: the system distrobution.
-# $5: the file system.
-# $6: the operating system.
-# $7: the system UUID.
-# $8: the comma delimited string of blacklisted device drivers.
-# $9: the comma delimited string of device IDs to use "vfio-pci".
-# $10: the comma delimited string of device IDs to use "pci-stub".
+# $1  : the reference.
+# $2  : the whitespace delimited string of command lines.
+# $3  : the IOMMU group ID.
+# $4  : the system distrobution.
+# $5  : the file system.
+# $6  : the operating system.
+# $7  : the system UUID.
+# $8  : the comma delimited string of blacklisted device drivers.
+# $9  : the comma delimited string of device IDs to use "vfio-pci".
+# $10 : the comma delimited string of device IDs to use "pci-stub".
 #
 function grub_vfio_src_write_this_grub
 {
