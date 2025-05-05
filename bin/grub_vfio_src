@@ -78,8 +78,6 @@ VIDEO_IOMMU_GROUP_LIST=()
 #
 # $1: the whitespace delimited string of command lines.
 # $2: the comma delimited list of IOMMU groups to exclude.
-# $3: the comma delimited list of device drivers to exclude.
-# $4: the comma delimited list of hardware IDs to exclude.
 #
 function grub_vfio_src_main
 {
@@ -111,31 +109,15 @@ function grub_vfio_src_main
     return 2
   fi
 
-  local excluded_driver_group_delim="${2}"
-
-  if is_string "${excluded_driver_group_delim}" \
-    && ! has_match \
-      "excluded_driver_group_delim" \
-      "${DRIVER_DELIM_REGEX}"; then
-    return 2
-  fi
-
-  local excluded_hardware_id_delim="${3}"
-
-  if is_string "${excluded_hardware_id_delim}" \
-    && ! has_match \
-      "excluded_hardware_id_delim" \
-      "${HARDWARE_ID_DELIM_REGEX}"; then
-    return 2
-  fi
-
   if ! grub_vfio_src_get_kernel_cmdline_iommu_driver; then
     return 1
   fi
 
   local destination_path="/etc/grub.d/40_custom"
 
-  if ! grub_vfio_src_write_most_grub \
+  if ! grub_vfio_src_get_non_video_delims "${excluded_iommu_group_delim}" \
+    || ! grub_vfio_src_get_video_delim_lists "${excluded_iommu_group_delim}" \
+    || ! grub_vfio_src_write_most_grub \
       "${cmdline_prefix}" \
       "${destination_path}" \
     || ! grub_vfio_src_update_grub; then
@@ -176,25 +158,35 @@ function grub_vfio_src_get_kernel_cmdline_iommu_driver
   esac
 }
 
-# IMPLEMENT
 #
 # $1: the comma delimited list of IOMMU groups to exclude.
-# $2: the comma delimited list of device drivers to exclude.
-# $3: the comma delimited list of hardware IDs to exclude.
 #
 function grub_vfio_src_get_non_video_delims
 {
+  local excluded_iommu_group_delim="${1}"
+
+  if is_string "${excluded_iommu_group_delim}" \
+    && ! has_match \
+      "excluded_iommu_group_delim" \
+      "${IOMMU_GROUP_DELIM_REGEX}"; then
+    return 2
+  fi
+
   local video_iommu_group_delim=$( \
     IFS=${DELIM}; \
     echo "${VIDEO_IOMMU_GROUP_LIST[*]}" \
   )
+
+  if is_string "${video_iommu_group_delim}"; then
+    excluded_iommu_group_delim+=",${video_iommu_group_delim}"
+  fi
 
   local names_to_ignore_delim="ether"
 
   local output="$( \
     eval \
       "${EXECUTABLE}" \
-      --ignore-group ${video_iommu_group_delim} \
+      --ignore-group ${excluded_iommu_group_delim} \
       --ignore-name ${names_to_ignore_delim} \
       --pcie
   )"
@@ -203,14 +195,20 @@ function grub_vfio_src_get_non_video_delims
   NOVIDEO_DRIVER_DELIM+="${output[1]}"
 }
 
-# IMPLEMENT
 #
 # $1: the comma delimited list of IOMMU groups to exclude.
-# $2: the comma delimited list of device drivers to exclude.
-# $3: the comma delimited list of hardware IDs to exclude.
 #
 function grub_vfio_src_get_video_delim_lists
 {
+  local excluded_iommu_group_delim="${1}"
+
+  if is_string "${excluded_iommu_group_delim}" \
+    && ! has_match \
+      "excluded_iommu_group_delim" \
+      "${IOMMU_GROUP_DELIM_REGEX}"; then
+    return 2
+  fi
+
   local -i index=1
   local -i max_index="${SAFE_MAX}"
   local output=""
@@ -223,8 +221,8 @@ function grub_vfio_src_get_video_delim_lists
     output="$( \
       eval \
         "${EXECUTABLE}" \
-        --graphics \
-        "${index}"
+        --graphics "${index}" \
+        --ignore-group "${excluded_iommu_group_delim}"
     )"
 
     if [[ "${output}" == "" ]]; then
