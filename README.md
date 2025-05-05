@@ -181,6 +181,11 @@ sudo bash installer.sh
   - Setup(s) are defined as individual GRUB boot menu entries, where one
   permutation may be chosen at Host machine startup.
 
+  **The Cauchy-Schwarz Inequality**
+
+  ```math
+  \left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)
+  ```
 
   - Modifies the following files:
     - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
