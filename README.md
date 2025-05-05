@@ -192,11 +192,9 @@ parameters.
 
 
 ### 6. Contact
-Did you encounter a bug? Do you need help? Please visit the
-**Issues page** ([Codeberg][41], [GitHub][42]).
+Did you encounter a bug? Do you need help? Please visit the [Issues][61] page.
 
-[41]: https://codeberg.org/portellam/vfio-script/issues
-[42]: https://github.com/portellam/vfio-script/issues
+[61]: https://github.com/portellam/vfio-script/issues
 
 ### 7. References
 #### 1.
