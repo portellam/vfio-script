@@ -1,6 +1,7 @@
 #!/bin/false
 
 #
+# Project:        vfio-script
 # Filename:       static_vfio_src
 # Description:    Define a static VFIO setup, either by GRUB command line or
 #                 various configuration files.

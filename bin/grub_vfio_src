@@ -1,6 +1,7 @@
 #!/bin/false
 
 #
+# Project:        vfio-script
 # Filename:       grub_vfio_src
 # Description:    Define one or more VFIO setup(s), as distinct GRUB menu
 #                 entries.
