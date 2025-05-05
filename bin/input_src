@@ -536,9 +536,9 @@ source \
 
   function print_usage
   {
-    if ! is_verbose; then
-      return 0
-    fi
+    # if ! is_verbose; then
+    #   return 0
+    # fi
 
     local -i column_prefix_count=28
 
@@ -560,7 +560,6 @@ source \
       "${COLUMN_SIZE}" \
       "Version ${SCRIPT_VERSION}."
 
-    echo
     echo -en "  -h, --help                "
 
     wrap_text \
@@ -583,6 +582,7 @@ source \
 
     #region VFIO setups
 
+    echo
     echo -e "VFIO setups:\n"
     echo -en "  -D, --dynamic            "
 
@@ -594,6 +594,7 @@ source \
       "${COLUMN_SIZE}" \
       "Define a temporary VFIO setup as a QEMU command line. Append to a Libvirt hook or a Guest machine configuration file. VFIO setup may be created/destroyed on a Guest startup/shutdown."
 
+    echo
     echo -en "  -M|--multiple-grub NUMS  "
 
     wrap_text \
@@ -604,6 +605,7 @@ source \
       "${COLUMN_SIZE}" \
       "Define one or more VFIO setup(s) as command line permutations; setup(s) are defined as individual GRUB boot menu entries, where one permutation may be chosen at Host machine startup. Note: multiple GPUs on separate IOMMU groups will create multiple permutations."
 
+    echo
     echo -en "$( get_repeated_space 28 )"
 
     wrap_text \
@@ -614,6 +616,7 @@ source \
       "${COLUMN_SIZE}" \
       "NUMS is a comma delimited list of positive numbers representing selected kernel(s); multiply the  permutations by the number of available kernel(s) to  use (sorted newest to oldest). Note: to use all available, input '0'."
 
+    echo
     echo -en "  -S|--static OPT          "
 
     wrap_text \
@@ -624,6 +627,7 @@ source \
       "${COLUMN_SIZE}" \
       "Define a persistent VFIO setup."
 
+    echo
     echo -en "$( get_repeated_space 28 )"
 
     wrap_text \
@@ -634,14 +638,7 @@ source \
       "${COLUMN_SIZE}" \
       "OPT is an option."
 
-    wrap_text \
-      false \
-      false \
-      true \
-      "${column_prefix_count}" \
-      "${COLUMN_SIZE}" \
-      "Show all output."
-
+    echo
     echo -en "  --static grub            "
 
     wrap_text \
@@ -652,6 +649,7 @@ source \
       "${COLUMN_SIZE}" \
       "Write to GRUB."
 
+    echo
     echo -en "  --static conf            "
 
     wrap_text \
@@ -666,6 +664,7 @@ source \
 
     #region Additional arguments
 
+    echo
     echo -e "Additional arguments:\n"
     echo -en "--allow-unsafe       "
 
@@ -677,6 +676,7 @@ source \
       "${COLUMN_SIZE}" \
       "Override safety limits. Override a maximum amount of permutations, and/or features which may repeat a given command many times. Note: safety limits are five (5) units each. Note: no prompt at execution."
 
+    echo
     echo -en "  --grub-cmdline TEXT  "
 
     wrap_text \
@@ -687,6 +687,7 @@ source \
       "${COLUMN_SIZE}" \
       "Define the GRUB command line. Note: avoid escape characters, such as double-quote (\") and/or VFIO commands so as to prevent conflicts."
 
+    echo
     echo -en "$( get_repeated_space 28 )"
 
     wrap_text \
@@ -701,6 +702,7 @@ source \
 
     #region Guest-machine-reserved devices to match
 
+    echo
     echo -e "Guest-machine-reserved devices to match:\n"
     echo -en "  -g|--iommu-groups GROUPS  "
 
@@ -712,6 +714,7 @@ source \
       "${COLUMN_SIZE}" \
       "Specify which IOMMU groups may be reserved for any Guest machine."
 
+    echo
     echo -en "$( get_repeated_space 28 )"
 
     wrap_text \
@@ -722,6 +725,7 @@ source \
       "${COLUMN_SIZE}" \
       "GROUPS is a comma delimited list of text."
 
+    echo
     echo -en "  -d|--drivers DRIVERS      "
 
     wrap_text \
@@ -732,6 +736,7 @@ source \
       "${COLUMN_SIZE}" \
       "Specify which devices' drivers to override with the \"vfio-pci\" driver."
 
+    echo
     echo -en "$( get_repeated_space 28 )"
 
     wrap_text \
@@ -752,6 +757,7 @@ source \
       "${COLUMN_SIZE}" \
       "Specify which devices' IDs to blacklist."
 
+    echo
     echo -en "$( get_repeated_space 28 )"
 
     wrap_text \
@@ -762,6 +768,7 @@ source \
       "${COLUMN_SIZE}" \
       "HWIDS is a comma delimited list of text."
 
+    echo
     echo -en "  -p|--pci-stub-ids HWIDS   "
 
     wrap_text \
@@ -772,6 +779,7 @@ source \
       "${COLUMN_SIZE}" \
       "Specify which devices' IDs to blacklist and drivers to override with the \"pci-stub\" driver."
 
+    echo
     echo -en "$( get_repeated_space 28 )"
 
     wrap_text \
@@ -786,6 +794,7 @@ source \
 
     #region Host-machine-reserved devices to match
 
+    echo
     echo -e "Host-machine-reserved devices to match:\n"
     echo -en "  --exclude-drivers DRIVERS       "
 
@@ -797,6 +806,7 @@ source \
       "${COLUMN_SIZE}" \
       "DRIVERS is a comma delimited list of text."
 
+    echo
     echo -en "$( get_repeated_space 28 )"
 
     wrap_text \
@@ -807,6 +817,7 @@ source \
       "${COLUMN_SIZE}" \
       "OPT DESC"
 
+    echo
     echo -en "  --exclude--iommu-groups GROUPS  "
 
     wrap_text \
@@ -817,6 +828,7 @@ source \
       "${COLUMN_SIZE}" \
       "Specify which IOMMU groups may be reserved for  the Host machine, if not defined within \"--iommu-groups\"."
 
+    echo
     echo -en "$( get_repeated_space 28 )"
 
     wrap_text \
@@ -827,6 +839,7 @@ source \
       "${COLUMN_SIZE}" \
       "GROUPS is a comma delimited list of positive numbers."
 
+    echo
     echo -en "  --exclude-hardware-ids HWIDS    "
 
     wrap_text \
@@ -837,6 +850,7 @@ source \
       "${COLUMN_SIZE}" \
       "Specify which devices' IDs to whitelist, if not defined within \"--vfio-pci-ids\" or \"--pci-stub-ids\"."
 
+    echo
     echo -en "$( get_repeated_space 28 )"
 
     wrap_text \
