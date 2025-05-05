@@ -184,9 +184,7 @@ sudo bash installer.sh
   **Determine number of GRUB boot menu entries**
 
 ```math
-\[
 \text{permutations} = \text{cards} \times \text{kernels}
-\]
 ```
 
   - Modifies the following files:
