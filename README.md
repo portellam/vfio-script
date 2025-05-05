@@ -153,14 +153,15 @@ sudo bash installer.sh
 
   --exclude--iommu-groups GROUPS  Specify which IOMMU groups may be reserved for
                                   the Host machine, if not defined within
-                                  "--groups".
+                                  "--iommu-groups".
 
                                   GROUPS is a comma delimited list of positive
                                   numbers.
 
 
   --exclude-hardware-ids HWIDS    Specify which devices' IDs to whitelist, if not
-                                  defined within "--ids" or "--pci-stub-ids".
+                                  defined within "--vfio-pci-ids" or
+                                  "--pci-stub-ids".
 
                                   HWIDS is a comma delimited list of text.
 ```

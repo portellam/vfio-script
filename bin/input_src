@@ -787,7 +787,7 @@ source \
     #region Host-machine-reserved devices to match
 
     echo -e "Host-machine-reserved devices to match:\n"
-    echo -en "ARGUMENT WHITESPACE OPTION"
+    echo -en "  --exclude-drivers DRIVERS       "
 
     wrap_text \
       false \
@@ -795,7 +795,7 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "DESC"
+      "DRIVERS is a comma delimited list of text."
 
     echo -en "$( get_repeated_space 28 )"
 
@@ -807,7 +807,7 @@ source \
       "${COLUMN_SIZE}" \
       "OPT DESC"
 
-    echo -en "ARGUMENT WHITESPACE OPTION"
+    echo -en "  --exclude--iommu-groups GROUPS  "
 
     wrap_text \
       false \
@@ -815,7 +815,7 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "DESC"
+      "Specify which IOMMU groups may be reserved for  the Host machine, if not defined within \"--iommu-groups\"."
 
     echo -en "$( get_repeated_space 28 )"
 
@@ -825,9 +825,9 @@ source \
       true \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "OPT DESC"
+      "GROUPS is a comma delimited list of positive numbers."
 
-    echo -en "ARGUMENT WHITESPACE OPTION"
+    echo -en "  --exclude-hardware-ids HWIDS    "
 
     wrap_text \
       false \
@@ -835,7 +835,7 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "DESC"
+      "Specify which devices' IDs to whitelist, if not defined within \"--vfio-pci-ids\" or \"--pci-stub-ids\"."
 
     echo -en "$( get_repeated_space 28 )"
 
@@ -845,7 +845,7 @@ source \
       true \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "OPT DESC"
+      "HWIDS is a comma delimited list of text."
 
     #endregion
 
