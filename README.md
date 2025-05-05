@@ -117,8 +117,8 @@ sudo bash installer.sh
 
 
   --grub-cmdline TEXT  Define the GRUB command line.
-                       Note: avoid escape characters (") and/or VFIO
-                       commands so as to prevent conflicts.
+                       Note: avoid escape characters, such as double-quote (")
+                       and/or VFIO commands so as to prevent conflicts.
 
                        TEXT is whitespace delimited text.
 
