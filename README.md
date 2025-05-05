@@ -185,23 +185,6 @@ sudo bash installer.sh
   This expression uses `\$` to display a dollar sign: $`\sqrt{\$4}`$
   ```
 
-  **How to determine the total number of GRUB boot menu entries**\
-  ```math
-  $$\permutations_total \eq \groups_video * \kernels$$
-  ```
-
-  **The Cauchy-Schwarz Inequality**
-
-  ```math
-  \left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)
-  ```
-
-  **Example:**\
-
-  ```math
-  $$\permutations_total \eq 2 \GPU * 2 \kernels_linux \eq 4 \setups$$
-  ```
-
   - Modifies the following files:
     - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
     - **overwrites** `/etc/default/grub` to define the default boot menu entry.
