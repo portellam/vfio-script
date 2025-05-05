@@ -30,12 +30,7 @@ fi
 
 declare -g SCRIPT_NAME="${2}"
 declare -g SCRIPT_VERSION="${3}"
-
 declare -gi COLUMN_SIZE="$( tput cols )"
-declare -gi MIN_IOMMU_GROUP_ID=0
-
-declare -g OPTION_ALL="all"
-
 declare -ga INPUT_LIST=()
 
 declare -gA INPUT_DICT=(
@@ -555,7 +550,7 @@ source \
       false \
       0 \
       "${COLUMN_SIZE}" \
-      "Parse, sort, and display hardware IDs and device drivers by IOMMU group(s)."
+      "Easily install, uninstall, or reinstall a VFIO setup on a Linux machine."
 
     wrap_text \
       false \
@@ -584,19 +579,9 @@ source \
       true \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "Show more output including queries and IOMMU groups."
-
-    echo -en "  -vv                       "
-
-    wrap_text \
-      false \
-      false \
-      true \
-      "${column_prefix_count}" \
-      "${COLUMN_SIZE}" \
       "Show all output."
 
-    echo -en "  -g, --group=GROUPS        "
+    echo -en "  -D, --dynamic            "
 
     wrap_text \
       false \
@@ -604,7 +589,17 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "Match IOMMU group ID(s);"
+      "Define a temporary VFIO setup as a QEMU command line. Append to a Libvirt hook or a Guest machine configuration file. VFIO setup may be created/destroyed on a Guest startup/shutdown."
+
+    echo -en "  -M|--multiple-grub NUMS  "
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Define one or more VFIO setup(s) as command line permutations; setup(s) are defined as individual GRUB boot menu entries, where one permutation may be chosen at Host machine startup. Note: multiple GPUs on separate IOMMU groups will create multiple permutations."
 
     echo -en "$( get_repeated_space 28 )"
 
@@ -614,27 +609,9 @@ source \
       true \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "GROUPS is a comma delimited list of positive numbers."
+      "NUMS is a comma delimited list of positive numbers representing selected kernel(s); multiply the  permutations by the number of available kernel(s) to  use (sorted newest to oldest). Note: to use all available, input '0'."
 
-    echo -en "  --ignore-group=GROUPS     "
-
-    wrap_text \
-      false \
-      false \
-      false \
-      "${column_prefix_count}" \
-      "${COLUMN_SIZE}" \
-      "Reverse match IOMMU group ID(s);"
-
-    echo -en "$( get_repeated_space 28 )"
-
-    wrap_text \
-      false \
-      false \
-      true \
-      "${column_prefix_count}" \
-      "${COLUMN_SIZE}" \
-      "GROUPS is a comma delimited list of positive numbers."
+    #TODO: work here!
 
     echo -en "  -G, --graphics=INDEX      "
 
