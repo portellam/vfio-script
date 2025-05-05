@@ -560,6 +560,7 @@ source \
       "${COLUMN_SIZE}" \
       "Version ${SCRIPT_VERSION}."
 
+    echo
     echo -en "  -h, --help                "
 
     wrap_text \
@@ -603,7 +604,7 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "Define one or more VFIO setup(s) as GRUB command line permutations; setup(s) are defined as individual GRUB boot menu entries, where one permutation may be chosen at Host machine startup."
+      "Define one or more persistent VFIO setup(s) as GRUB command line permutations; setup(s) are defined as individual GRUB boot menu entries, where one permutation may be chosen at Host machine startup."
 
     echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
