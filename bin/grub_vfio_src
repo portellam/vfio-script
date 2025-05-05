@@ -11,14 +11,14 @@
 
 #region Sources
 
-  SOURCE_PATH="${1}"
-  shift
-  COLUMN_SIZE="$( tput cols )"
+SOURCE_PATH="${1}"
+shift
+COLUMN_SIZE="$( tput cols )"
 
-  source \
-    "${SOURCE_PATH}print_src" \
-    "${SOURCE_PATH}" \
-    "${COLUMN_SIZE}"
+source \
+  "${SOURCE_PATH}print_src" \
+  "${SOURCE_PATH}" \
+  "${COLUMN_SIZE}"
 
 #endregion
 
@@ -63,429 +63,432 @@ VIDEO_IOMMU_GROUP_LIST=()
 
 #region Logic
 
-  #
-  # $1: the whitespace delimited string of command lines.
-  #
-  function grub_vfio_src_main
-  {
-    if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
-      && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
-      cmdline_prefix="${cmdline_prefix//\"/}"
-      shift
+#
+# $1: the whitespace delimited string of command lines.
+# $2: the comma delimited list of IOMMU groups to exclude.
+# $3: the comma delimited list of device drivers to exclude.
+# $4: the comma delimited list of hardware IDs to exclude.
+#
+function grub_vfio_src_main
+{
+  if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
+    && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
+    cmdline_prefix="${cmdline_prefix//\"/}"
+    shift
 
-    else
-      cmdline_prefix=""
-    fi
+  else
+    cmdline_prefix=""
+  fi
 
-    if ! grub_vfio_src_get_kernel_cmdline_iommu_driver; then
-      return 1
-    fi
+  if ! grub_vfio_src_get_kernel_cmdline_iommu_driver; then
+    return 1
+  fi
 
-    if ! grub_vfio_src_write_grub \
-        "${cmdline_prefix}" \
-      || ! grub_vfio_src_update_grub; then
-      print_fail_to_log "Failed to install a GRUB VFIO setup."
-      return 1
-    fi
+  if ! grub_vfio_src_write_grub \
+      "${cmdline_prefix}" \
+    || ! grub_vfio_src_update_grub; then
+    print_fail_to_log "Failed to install a GRUB VFIO setup."
+    return 1
+  fi
 
-    print_pass_to_log "Installed a GRUB VFIO setup."
-  }
+  print_pass_to_log "Installed a GRUB VFIO setup."
+}
 
-  function grub_vfio_src_get_kernel_cmdline_iommu_driver
-  {
-    cpu_vendor_id="$( \
-      lscpu \
-      | grep \
-        --extended-regexp \
-        --ignore-case \
-        Vendor \
-      | awk \
-        'END {print $3}' \
-    )"
+function grub_vfio_src_get_kernel_cmdline_iommu_driver
+{
+  cpu_vendor_id="$( \
+    lscpu \
+    | grep \
+      --extended-regexp \
+      --ignore-case \
+      Vendor \
+    | awk \
+      'END {print $3}' \
+  )"
 
-    case "${cpu_vendor_id}" in
-      *"amd"* )
-        CMDLINE_PREFIX="amd_iommu=on ${CMDLINE_PREFIX}" ;;
+  case "${cpu_vendor_id}" in
+    *"amd"* )
+      CMDLINE_PREFIX="amd_iommu=on ${CMDLINE_PREFIX}" ;;
 
-      *"intel"* )
-        CMDLINE_PREFIX="intel_iommu=on ${CMDLINE_PREFIX}" ;;
+    *"intel"* )
+      CMDLINE_PREFIX="intel_iommu=on ${CMDLINE_PREFIX}" ;;
 
-      * )
-        print_error_to_log "Unknown CPU vendor '${cpu_vendor_id}'."
+    * )
+      print_error_to_log "Unknown CPU vendor '${cpu_vendor_id}'."
 
-        if "${ALLOW_UNSAFE}"; then
-          return 0
-        fi
+      if "${ALLOW_UNSAFE}"; then
+        return 0
+      fi
 
-        return 1 ;;
-    esac
-  }
+      return 1 ;;
+  esac
+}
 
-  function grub_vfio_src_get_non_video_delims
-  {
-    video_iommu_group_delim=$( \
-      IFS=${DELIM}; \
-      echo "${VIDEO_IOMMU_GROUP_LIST[*]}" \
-    )
+function grub_vfio_src_get_non_video_delims
+{
+  video_iommu_group_delim=$( \
+    IFS=${DELIM}; \
+    echo "${VIDEO_IOMMU_GROUP_LIST[*]}" \
+  )
 
-    names_to_ignore_delim="ether"
+  names_to_ignore_delim="ether"
 
+  output="$( \
+    eval \
+      "${EXECUTABLE}" \
+      --ignore-group ${video_iommu_group_delim} \
+      --ignore-name ${names_to_ignore_delim} \
+      --pcie
+  )"
+
+  NOVIDEO_HARDWARE_ID_DELIM+="${output[0]}"
+  NOVIDEO_DRIVER_DELIM+="${output[1]}"
+}
+
+function grub_vfio_src_get_video_delim_lists
+{
+  index=1
+  max_index="${SAFE_MAX}"
+  output=""
+
+  if "${ALLOW_UNSAFE}"; then
+    max_index=128
+  fi
+
+  while [[ "${index}" -le "${max_index}" ]]; do
     output="$( \
       eval \
         "${EXECUTABLE}" \
-        --ignore-group ${video_iommu_group_delim} \
-        --ignore-name ${names_to_ignore_delim} \
-        --pcie
+        --graphics \
+        "${index}"
     )"
 
-    NOVIDEO_HARDWARE_ID_DELIM+="${output[0]}"
-    NOVIDEO_DRIVER_DELIM+="${output[1]}"
-  }
-
-  function grub_vfio_src_get_video_delim_lists
-  {
-    index=1
-    max_index="${SAFE_MAX}"
-    output=""
-
-    if "${ALLOW_UNSAFE}"; then
-      max_index=128
+    if [[ "${output}" == "" ]]; then
+      break
     fi
 
-    while [[ "${index}" -le "${max_index}" ]]; do
-      output="$( \
-        eval \
-          "${EXECUTABLE}" \
-          --graphics \
-          "${index}"
-      )"
+    VIDEO_GROUP_HARDWARE_ID_DELIM_LIST+=( "${output[0]}" )
+    VIDEO_GROUP_DRIVER_DELIM_LIST+=( "${output[1]}" )
+    VIDEO_IOMMU_GROUP_LIST+=( "${output[2]}" )
+    (( index++ ))
+  done
+}
 
-      if [[ "${output}" == "" ]]; then
-        break
+function grub_vfio_src_update_grub
+{
+  output="Updating GRUB"
+  print_output_to_log "${output}"
+
+  if ! sudo \
+    update-grub; then
+    print_fail_to_log "${output}"
+    return 1
+  fi
+
+  print_pass_to_log "${output}"
+}
+
+function grub_vfio_src_set_grub_entries
+  {
+    if ! sed \
+      -i \
+      "s/+'/-'/g" \
+      "${GRUB_CUSTOM_DEST_PATH}" \
+      &> /dev/null; then
+      print_error_to_log "Failed to enable entries for GRUB proxy file."
+      return 1
+    fi
+  }
+
+  function grub_vfio_src_unset_grub_entries
+  {
+    if ! sed \
+      -i \
+      "s/+'/-'/g" \
+      "${GRUB_CUSTOM_DEST_PATH}" \
+      &> /dev/null; then
+      print_error_to_log "Failed to disable entries for GRUB proxy file."
+      return 1
+    fi
+  }
+
+function grub_vfio_src_verify_dependencies
+{
+  if ! command \
+    -v \
+    "${EXECUTABLE}" \
+    &> /dev/null; then
+    print_error_to_log "Cannot continue. Missing '${EXECUTABLE}'."
+    return 1
+  fi
+}
+
+#
+# $1: the whitespace delimited string of command lines.
+# $2: the max number of kernels.
+# $3: the default boot video device group index.
+#
+function static_vfio_src_write_most_grub
+{
+  cmdline_prefix="${1}"
+
+  if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
+    && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
+    shift
+
+  else
+    cmdline_prefix=""
+  fi
+
+  max_parsed_kernels="${SAFE_MAX}"
+
+  if "${ALLOW_UNSAFE}"; then
+    max_parsed_kernels="${1}"
+  fi
+
+  if ! "${ALLOW_UNSAFE}" \
+    && [[ "${1}" -le "${SAFE_MAX}" ]]; then
+    max_parsed_kernels="${1}"
+  fi
+
+  default_index=0
+
+  if "${ALLOW_UNSAFE}"; then
+    default_index="${2}"
+  fi
+
+  if ! "${ALLOW_UNSAFE}" \
+    && [[ "${2}" -le "${SAFE_MAX}" ]]; then
+    default_index="${2}"
+  fi
+
+  match="/boot/vmli*"
+
+  kernel_list=( \
+    $( \
+      ls \
+        -1 \
+        "${match}" \
+      | cut \
+        --delimiter 'z' \
+        --fields 2 \
+      | cut \
+        --characters 2- \
+      | sort \
+        --numeric-sort \
+        --reverse \
+      | head \
+        --lines \
+        "${max_parsed_kernels}" \
+    )
+  )
+
+  disk=$( \
+    df \
+      / \
+    | grep \
+      --ignore-case \
+      --invert-match \
+      'filesystem' \
+    | cut \
+      --delimiter '/' \
+      --fields 3 \
+    | cut \
+      --delimiter ' ' \
+      --fields 1 \
+  )
+
+  distro=$( \
+    lsb_release \
+      --id \
+      --short \
+  )
+
+  fstype=$( blkid \
+      --match-tag TYPE \
+    | grep \
+      "${disk}" \
+    | cut \
+      --delimiter "${DELIM}" \
+      --fields 2 \
+  )
+
+  os=$( uname )
+
+  uuid=$( \
+    blkid \
+      --match-tag UUID \
+    | grep \
+      "${disk}" \
+    | cut \
+      --delimiter "${DELIM}" \
+      --fields 2 \
+  )
+
+  output_list=(
+    "#!/bin/sh"
+    "exec tail -n +3 \$0"
+    "# This file provides an easy way to add custom menu entries. Simply type the"
+    "# menu entries you want to add after this comment. Be careful not to change"
+    "# the 'exec tail' line above."
+    "#"
+  )
+
+  default_title=""
+  index=0
+  matched_index=false
+  title_list=()
+
+  for kernel in "${kernel_list[@]}"; do
+    for iommu_group in "${VIDEO_IOMMU_GROUP_LIST[@]}"; do
+      driver_delim="${NOVIDEO_DRIVER_DELIM}${DELIM}"
+      driver_delim+="${VIDEO_GROUP_DRIVER_DELIM_LIST[${index}]}"
+      hardware_id_delim="${NOVIDEO_HARDWARE_ID_DELIM}${DELIM}"
+      hardware_id_delim+="${VIDEO_GROUP_HARDWARE_ID_DELIM_LIST[${index}]}"
+
+      static_vfio_src_write_this_grub \
+        "output_list" \
+        "title_list" \
+        "${cmdline_prefix}" \
+        "${iommu_group}" \
+        "${kernel}" \
+        "${distro}" \
+        "${fstype}" \
+        "${os}" \
+        "${uuid}" \
+        "${driver_delim}" \
+        "${hardware_id_delim}"
+
+      if [[ "${index}" -eq "${default_index}" ]] \
+        && ! "${matched_index}"; then
+        default_title="${title_list[-1]}"
+        matched_index=true
       fi
 
-      VIDEO_GROUP_HARDWARE_ID_DELIM_LIST+=( "${output[0]}" )
-      VIDEO_GROUP_DRIVER_DELIM_LIST+=( "${output[1]}" )
-      VIDEO_IOMMU_GROUP_LIST+=( "${output[2]}" )
       (( index++ ))
     done
-  }
+  done
 
-  function grub_vfio_src_update_grub
-  {
-    output="Updating GRUB"
-    print_output_to_log "${output}"
+  destination_path="/etc/grub.d/40_custom"
+  destination_dir=$( dirname "${destination_path}" )
 
-    if ! sudo \
-      update-grub; then
-      print_fail_to_log "${output}"
-      return 1
-    fi
+  if [[ ! -d "${destination_dir}" ]] \
+    && ! sudo \
+      mkdir \
+        --parents \
+        "${destination_dir}"; then
+    print_error_to_log "Failed to create directory '${destination_dir}'."
+    return 1
+  fi
 
-    print_pass_to_log "${output}"
-  }
+  if ! sed \
+      -i \
+      '/'"${line_to_match}"'/c\'"${line_grub_default}" \
+      "${GRUB_DEST_PATH}" \
+    || ! echo \
+      -e \
+      "\n${output_list[*]}" \
+      >> "${destination_path}" ; then
+    print_error_to_log "Failed to overwrite '${destination_path}'."
+    return 1
+  fi
 
-  function grub_vfio_src_set_grub_entries
-    {
-      if ! sed \
-        -i \
-        "s/+'/-'/g" \
-        "${GRUB_CUSTOM_DEST_PATH}" \
-        &> /dev/null; then
-        print_error_to_log "Failed to enable entries for GRUB proxy file."
-        return 1
-      fi
-    }
+  destination_path="/etc/default/grub"
+  line_to_match="GRUB_DEFAULT="
 
-    function grub_vfio_src_unset_grub_entries
-    {
-      if ! sed \
-        -i \
-        "s/+'/-'/g" \
-        "${GRUB_CUSTOM_DEST_PATH}" \
-        &> /dev/null; then
-        print_error_to_log "Failed to disable entries for GRUB proxy file."
-        return 1
-      fi
-    }
+  if [[ "${default_title}" == "" ]]; then
+    line_grub_default="${line_to_match}${default_index}"
 
-  function grub_vfio_src_verify_dependencies
-  {
-    if ! command \
-      -v \
-      "${EXECUTABLE}" \
-      &> /dev/null; then
-      print_error_to_log "Cannot continue. Missing '${EXECUTABLE}'."
-      return 1
-    fi
-  }
+  else
+    line_grub_default="${line_to_match}${default_title}"
+  fi
 
-  #
-  # $1: the whitespace delimited string of command lines.
-  # $2: the max number of kernels.
-  # $3: the default boot video device group index.
-  #
-  function static_vfio_src_write_most_grub
-  {
-    cmdline_prefix="${1}"
+  if ! sed \
+      -i \
+      '/'"${line_to_match}"'/c\'"${line_grub_default}" \
+      "${destination_path}"; then
+    print_error_to_log "Failed to overwrite '${destination_path}'."
+    return 1
+  fi
+}
 
-    if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
-      && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
-      shift
+#
+# $1: the reference.
+# $2: the whitespace delimited string of command lines.
+# $3: the IOMMU group ID.
+# $4: the system distrobution.
+# $5: the file system.
+# $6: the operating system.
+# $7: the system UUID.
+# $8: the comma delimited string of blacklisted device drivers.
+# $9: the comma delimited string of device IDs to use "vfio-pci".
+# $10: the comma delimited string of device IDs to use "pci-stub".
+#
+function static_vfio_src_write_this_grub
+{
+  if [[ "${1}" == "" ]]; then
+    return
+  fi
 
-    else
-      cmdline_prefix=""
-    fi
+  local -n output_list_ref="${1}"
+  shift
 
-    max_parsed_kernels="${SAFE_MAX}"
+  if [[ "${1}" == "" ]]; then
+    return
+  fi
 
-    if "${ALLOW_UNSAFE}"; then
-      max_parsed_kernels="${1}"
-    fi
+  local -n title_list_ref="${1}"
+  shift
 
-    if ! "${ALLOW_UNSAFE}" \
-      && [[ "${1}" -le "${SAFE_MAX}" ]]; then
-      max_parsed_kernels="${1}"
-    fi
+  cmdline_prefix="${1}"
 
-    default_index=0
-
-    if "${ALLOW_UNSAFE}"; then
-      default_index="${2}"
-    fi
-
-    if ! "${ALLOW_UNSAFE}" \
-      && [[ "${2}" -le "${SAFE_MAX}" ]]; then
-      default_index="${2}"
-    fi
-
-    match="/boot/vmli*"
-
-    kernel_list=( \
-      $( \
-        ls \
-          -1 \
-          "${match}" \
-        | cut \
-          --delimiter 'z' \
-          --fields 2 \
-        | cut \
-          --characters 2- \
-        | sort \
-          --numeric-sort \
-          --reverse \
-        | head \
-          --lines \
-          "${max_parsed_kernels}" \
-      )
-    )
-
-    disk=$( \
-      df \
-        / \
-      | grep \
-        --ignore-case \
-        --invert-match \
-        'filesystem' \
-      | cut \
-        --delimiter '/' \
-        --fields 3 \
-      | cut \
-        --delimiter ' ' \
-        --fields 1 \
-    )
-
-    distro=$( \
-      lsb_release \
-        --id \
-        --short \
-    )
-
-    fstype=$( blkid \
-        --match-tag TYPE \
-      | grep \
-        "${disk}" \
-      | cut \
-        --delimiter "${DELIM}" \
-        --fields 2 \
-    )
-
-    os=$( uname )
-
-    uuid=$( \
-      blkid \
-        --match-tag UUID \
-      | grep \
-        "${disk}" \
-      | cut \
-        --delimiter "${DELIM}" \
-        --fields 2 \
-    )
-
-    output_list=(
-      "#!/bin/sh"
-      "exec tail -n +3 \$0"
-      "# This file provides an easy way to add custom menu entries. Simply type the"
-      "# menu entries you want to add after this comment. Be careful not to change"
-      "# the 'exec tail' line above."
-      "#"
-    )
-
-    default_title=""
-    index=0
-    matched_index=false
-    title_list=()
-
-    for kernel in "${kernel_list[@]}"; do
-      for iommu_group in "${VIDEO_IOMMU_GROUP_LIST[@]}"; do
-        driver_delim="${NOVIDEO_DRIVER_DELIM}${DELIM}"
-        driver_delim+="${VIDEO_GROUP_DRIVER_DELIM_LIST[${index}]}"
-        hardware_id_delim="${NOVIDEO_HARDWARE_ID_DELIM}${DELIM}"
-        hardware_id_delim+="${VIDEO_GROUP_HARDWARE_ID_DELIM_LIST[${index}]}"
-
-        static_vfio_src_write_this_grub \
-          "output_list" \
-          "title_list" \
-          "${cmdline_prefix}" \
-          "${iommu_group}" \
-          "${kernel}" \
-          "${distro}" \
-          "${fstype}" \
-          "${os}" \
-          "${uuid}" \
-          "${driver_delim}" \
-          "${hardware_id_delim}"
-
-        if [[ "${index}" -eq "${default_index}" ]] \
-          && ! "${matched_index}"; then
-          default_title="${title_list[-1]}"
-          matched_index=true
-        fi
-
-        (( index++ ))
-      done
-    done
-
-    destination_path="/etc/grub.d/40_custom"
-    destination_dir=$( dirname "${destination_path}" )
-
-    if [[ ! -d "${destination_dir}" ]] \
-      && ! sudo \
-        mkdir \
-          --parents \
-          "${destination_dir}"; then
-      print_error_to_log "Failed to create directory '${destination_dir}'."
-      return 1
-    fi
-
-    if ! sed \
-        -i \
-        '/'"${line_to_match}"'/c\'"${line_grub_default}" \
-        "${GRUB_DEST_PATH}" \
-      || ! echo \
-        -e \
-        "\n${output_list[*]}" \
-        >> "${destination_path}" ; then
-      print_error_to_log "Failed to overwrite '${destination_path}'."
-      return 1
-    fi
-
-    destination_path="/etc/default/grub"
-    line_to_match="GRUB_DEFAULT="
-
-    if [[ "${default_title}" == "" ]]; then
-      line_grub_default="${line_to_match}${default_index}"
-
-    else
-      line_grub_default="${line_to_match}${default_title}"
-    fi
-
-    if ! sed \
-        -i \
-        '/'"${line_to_match}"'/c\'"${line_grub_default}" \
-        "${destination_path}"; then
-      print_error_to_log "Failed to overwrite '${destination_path}'."
-      return 1
-    fi
-  }
-
-  #
-  # $1: the reference.
-  # $2: the whitespace delimited string of command lines.
-  # $3: the IOMMU group ID.
-  # $4: the system distrobution.
-  # $5: the file system.
-  # $6: the operating system.
-  # $7: the system UUID.
-  # $8: the comma delimited string of blacklisted device drivers.
-  # $9: the comma delimited string of device IDs to use "vfio-pci".
-  # $10: the comma delimited string of device IDs to use "pci-stub".
-  #
-  function static_vfio_src_write_this_grub
-  {
-    if [[ "${1}" == "" ]]; then
-      return
-    fi
-
-    local -n output_list_ref="${1}"
+  if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
+    && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
     shift
 
-    if [[ "${1}" == "" ]]; then
-      return
-    fi
+  else
+    cmdline_prefix=""
+  fi
 
-    local -n title_list_ref="${1}"
-    shift
+  iommu_group="${1}"
+  kernel="${2}"
+  distro="${3}"
+  fstype="${4}"
+  os="${5}"
+  uuid="${6}"
 
-    cmdline_prefix="${1}"
+  vfio_pci_driver_delim="${7}"
+  vfio_pci_hardware_id_delim="${8}"
+  pci_stub_hardware_id_delim="${9}"
 
-    if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
-      && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
-      shift
+  cmdline="modprobe.blacklist=${vfio_pci_driver_delim} "
+  cmdline+="pci_stub.ids=${pci_stub_hardware_id_delim} "
+  cmdline+="vfio_pci.ids=${vfio_pci_hardware_id_delim} "
+  cmdline="${CMDLINE_PREFIX}${cmdline_prefix}${cmdline::-1}"
+  cmdline="GRUB_CMDLINE_LINUX_DEFAULT=\"${cmdline}\""
 
-    else
-      cmdline_prefix=""
-    fi
+  partial_title="VFIO w/o IOMMU group '${iommu_group}';"
+  partial_title+=" Video: '${this_iommu_group_vga_name}'"
 
-    iommu_group="${1}"
-    kernel="${2}"
-    distro="${3}"
-    fstype="${4}"
-    os="${5}"
-    uuid="${6}"
+  title="${distro}, with ${os} ${kernel} (${partial_title})"
+  title_list_ref+=( "${title}" )
 
-    vfio_pci_driver_delim="${7}"
-    vfio_pci_hardware_id_delim="${8}"
-    pci_stub_hardware_id_delim="${9}"
-
-    cmdline="modprobe.blacklist=${vfio_pci_driver_delim} "
-    cmdline+="pci_stub.ids=${pci_stub_hardware_id_delim} "
-    cmdline+="vfio_pci.ids=${vfio_pci_hardware_id_delim} "
-    cmdline="${CMDLINE_PREFIX}${cmdline_prefix}${cmdline::-1}"
-    cmdline="GRUB_CMDLINE_LINUX_DEFAULT=\"${cmdline}\""
-
-    partial_title="VFIO w/o IOMMU group '${iommu_group}';"
-    partial_title+=" Video: '${this_iommu_group_vga_name}'"
-
-    title="${distro}, with ${os} ${kernel} (${partial_title})"
-    title_list_ref+=( "${title}" )
-
-    output_list_ref+=(
-      "menuentry \"${title}\"{"
-      # "\tload_video"
-      # "insmod gzio"
-      # "if [ x\$grub_platform = xxen ]; then insmod xzio; insmod lzopio; fi"
-      # "insmod part_gpt"
-      "\tinsmod ${fstype}"
-      "\tset root='/dev/disk/by-uuid/${uuid}'"
-      "\t"'if [ x$feature_platform_search_hint = xy ]; then'"\n\t\t"'search --no-floppy --fs-uuid --set=root '"${uuid}\n\t"'fi'
-      "\techo  'Loading ${os} ${kernel} ...'"
-      "\tlinux   /boot/vmlinuz-${kernel} root=UUID=${uuid} ${cmdline}"
-      "\tinitrd  /boot/initrd.img-${kernel}"
-      "\techo  \"${title}\""
-      "}"
-      ""
-    )
-  }
+  output_list_ref+=(
+    "menuentry \"${title}\"{"
+    # "\tload_video"
+    # "insmod gzio"
+    # "if [ x\$grub_platform = xxen ]; then insmod xzio; insmod lzopio; fi"
+    # "insmod part_gpt"
+    "\tinsmod ${fstype}"
+    "\tset root='/dev/disk/by-uuid/${uuid}'"
+    "\t"'if [ x$feature_platform_search_hint = xy ]; then'"\n\t\t"'search --no-floppy --fs-uuid --set=root '"${uuid}\n\t"'fi'
+    "\techo  'Loading ${os} ${kernel} ...'"
+    "\tlinux   /boot/vmlinuz-${kernel} root=UUID=${uuid} ${cmdline}"
+    "\tinitrd  /boot/initrd.img-${kernel}"
+    "\techo  \"${title}\""
+    "}"
+    ""
+  )
+}
 
 #endregion
