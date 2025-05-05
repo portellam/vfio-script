@@ -1,0 +1,992 @@
+#!/bin/false
+
+#
+# Filename:       input_src
+# Description:    Argument logic.
+# Author(s):      Alex Portell <github.com/portellam>
+# Maintainer(s):  Alex Portell <github.com/portellam>
+# Version:        0.0.1
+#
+
+#
+# TODO:
+# - [ ] parse number ranges in inputs.
+# - [ ] make arguments exclusive.
+#   - This makes project similar to 'grep' command and other Bash commands.
+#   - and easier to develop.
+#   - A user may just run command more than once.
+# - [x] make options inclusive.
+#
+
+#region Sources (1/2)
+
+declare -g SOURCE_PATH="${1}"
+
+source \
+  "${SOURCE_PATH}datatype_src"
+
+source \
+  "${SOURCE_PATH}file_src"
+
+#endregion
+
+#region Parameters
+
+shopt -s nullglob   # aid with argument inputs.
+
+MINIMUM_PCI_STUB_HARDWARE_ID_DELIM=""
+MINIMUM_VFIO_PCI_DRIVER_DELIM=""
+MINIMUM_VFIO_PCI_HARDWARE_ID_DELIM=""
+
+VARIOUS_PCI_STUB_HARDWARE_ID_LIST=()
+VARIOUS_VFIO_PCI_DRIVER_DELIM_LIST=()
+VARIOUS_VFIO_PCI_HARDWARE_ID_LIST=()
+
+
+if ! is_string "${2}"; then
+  exit 1
+fi
+
+if ! is_string "${3}"; then
+  exit 1
+fi
+
+declare -g SCRIPT_NAME="${2}"
+declare -g SCRIPT_VERSION="${3}"
+
+declare -gi COLUMN_SIZE="$( tput cols )"
+declare -gi MIN_IOMMU_GROUP_ID=0
+
+declare -g ETC_PATH="/usr/local/etc/"
+
+declare -g ARGUMENT_MATCH_GROUP="-g"
+declare -g OPTION_ALL="all"
+
+declare -ga INPUT_LIST=()
+
+declare -gA INPUT_DICT=(
+  ["MATCH_GROUP"]=false
+  ["MATCH_GROUP_LIST"]=""
+  ["MATCH_HOST"]=false
+  ["MATCH_MAKE"]=false
+  ["MATCH_MAKE_LIST"]=""
+  ["MATCH_NAME"]=false
+  ["MATCH_NAME_LIST"]=""
+  ["MATCH_TYPE"]=false
+  ["MATCH_TYPE_LIST"]=""
+  ["MATCH_VIDEO"]=false
+  ["MATCH_VIDEO_LIST"]=""
+  ["UNMATCH_GROUP"]=false
+  ["UNMATCH_GROUP_LIST"]=""
+  ["UNMATCH_HOST"]=false
+  ["UNMATCH_MAKE"]=false
+  ["UNMATCH_MAKE_LIST"]=""
+  ["UNMATCH_NAME"]=false
+  ["UNMATCH_NAME_LIST"]=""
+  ["UNMATCH_TYPE"]=false
+  ["UNMATCH_TYPE_LIST"]=""
+  ["UNMATCH_VIDEO"]=""
+  ["UNMATCH_VIDEO_LIST"]=""
+  ["VERBOSE_DOUBLE"]=false
+  ["VERBOSE"]=false
+  ["XML_FILE"]="${ETC_PATH}${SCRIPT_NAME}${XML_EXTENSION}"
+  ["XML_READ"]=false
+  ["XML_WRITE"]=false
+)
+
+declare -gA INPUT_LIST_DICT=(
+  ["MATCH_GROUP"]="MATCH_GROUP_LIST"
+  ["MATCH_MAKE"]="MATCH_MAKE_LIST"
+  ["MATCH_NAME"]="MATCH_NAME_LIST"
+  ["MATCH_TYPE"]="MATCH_TYPE_LIST"
+  ["MATCH_VIDEO"]="MATCH_VIDEO_LIST"
+  ["UNMATCH_GROUP"]="UNMATCH_GROUP_LIST"
+  ["UNMATCH_MAKE"]="UNMATCH_MAKE_LIST"
+  ["UNMATCH_NAME"]="UNMATCH_MAKE_LIST"
+  ["UNMATCH_TYPE"]="UNMATCH_TYPE_LIST"
+  ["UNMATCH_VIDEO"]="UNMATCH_VIDEO_LIST"
+)
+
+#endregion
+
+#region Sources (2/2)
+
+source \
+  "${SOURCE_PATH}print_src" \
+  "${SOURCE_PATH}" \
+  "${COLUMN_SIZE}"
+
+#endregion
+
+#region Logic
+
+  #
+  # $1 : the input dictionary key as a string.
+  # $2 : the value to append as a string.
+  #
+  function append_input_dict_list
+  {
+    if ! is_string "${1}" \
+      || ! is_string "${2}"; then
+      print_invalid_option_and_exit \
+       "${2}"
+    fi
+
+    local append_input_dict_list_key=${INPUT_LIST_DICT["${1}"]}
+
+    if ! is_string "${append_input_dict_list_key}" \
+      || ! is_string "${2}"; then
+      print_invalid_option_and_exit \
+       "${2}"
+    fi
+
+    INPUT_DICT["${append_input_dict_list_key}"]+="${2},"
+    return 0
+  }
+
+  #
+  # $1 : the input dictionary key as a string.
+  # $2 : the value to append as a string.
+  #
+  function append_numbered_input_list
+  {
+    if ! is_string "${1}" \
+      || ! is_string "${2}"; then
+      print_invalid_option_and_exit \
+       "${2}"
+    fi
+
+    local -i minimum_value=0
+
+    if ! is_comma_delimited_list_of_positive_numbers "${2}" \
+      || (
+        [[ "${2: -2}" == "," ]] \
+        && [[ "${2::-2}" -lt "${minimum_value}" ]] \
+      ) || ! append_input_dict_list \
+          "${1}" \
+          "${2}"; then
+      print_invalid_option_and_exit \
+       "${2}"
+    fi
+
+    return 0
+  }
+
+  function get_comma_list_of_iommu_group_ids
+  {
+    seq \
+      "${MIN_IOMMU_GROUP_ID}" \
+      "${MAX_IOMMU_GROUP_ID}" \
+    | tr \
+      '\n' \
+      ',' \
+    | sed \
+      's:,*$::'
+
+    echo
+  }
+
+  #
+  # $1 : the argument as a string.
+  #
+  function is_argument_or_empty_string
+  {
+    if ! is_string "${1}"; then
+      return 0
+    fi
+
+    if [[ "${1}" == "---"* ]]; then
+      return 1
+    fi
+
+    if [[ "${1}" == "-"* ]] \
+      || [[ "${1}" == "--"* ]]; then
+      return 0
+    fi
+
+    return 1
+  }
+
+  #
+  # $1 : do match by keyword or fullword.
+  # $2 : the boolean as a reference.
+  # $2 : the list dictionary key as a string.
+  # $3 : the do match boolean to match dictionary key as a string.
+  # $5 : the do match flag as a boolean.
+  # $6 : the comma delimited list of valid matches as a string.
+  # $@ : the values to match as a list.
+  #
+  function is_matched_keyword
+  {
+    if ! is_boolean "${1}" \
+      || ! is_variable "${2}" \
+      || ! is_string "${3}"; then
+      return 2
+    fi
+
+    local do_match_value_by_keyword="${1}"
+    local -n reference_is_matched="${2}"
+
+    if ! is_boolean "${reference_is_matched}"; then
+      return 2
+    fi
+
+    local do_match_value=false
+    local match_delim=""
+
+    if is_dict "${3}"; then
+      local -n matched_dictionary="${3}"
+
+      if ! is_string "${4}" \
+        || ! is_string "${5}"; then
+        return 2
+      fi
+
+      do_match_value="${matched_dictionary["${4}"]}"
+      match_delim="${matched_dictionary["${5}"]}"
+
+      if ! is_boolean "${do_match_value}" \
+        || ! is_string "${match_delim}"; then
+        return 2
+      fi
+
+      shift
+
+    else
+      if ! is_boolean "${3}" \
+        || ! is_string "${4}"; then
+        return 2
+      fi
+
+      do_match_value="${3}"
+      match_delim="${4}"
+    fi
+
+    shift
+    shift
+    shift
+    shift
+    local value_list="$@"
+
+    for this_match in $( \
+      echo "${match_delim}" \
+        | sed "s/,/ /g"
+    ); do
+
+      if "${do_match_value_by_keyword}" \
+        && [[ "${value_list,,}" =~ "${this_match,,}" ]]; then
+        reference_is_matched=true
+        return 0
+      fi
+
+      if ! "${do_match_value_by_keyword}" \
+        && [[ "${value_list,,}" == "${this_match,,}" ]]; then
+        reference_is_matched=true
+        return 0
+      fi
+
+    done
+
+    reference_is_matched=false
+    return 1
+  }
+
+  function is_verbose
+  {
+    if ! "${INPUT_DICT["VERBOSE"]}"; then
+      return 1
+    fi
+
+    return 0
+  }
+
+  function is_verbose_doubled
+  {
+    if ! "${INPUT_DICT["VERBOSE_DOUBLE"]}"; then
+      return 1
+    fi
+
+    return 0
+  }
+
+  function match_all_groups
+  {
+    parse_this_argument \
+      "${ARGUMENT_MATCH_GROUP}" \
+      "${OPTION_ALL}"
+  }
+
+  #
+  # $@ : the argument(s) as an array.
+  #
+  function parse_many_arguments
+  {
+    if ! parse_this_argument "${@}"; then
+      return 1
+    fi
+
+    trim_input_lists
+    return 0
+  }
+
+  #
+  # $1 : the argument as a string.
+  # $@ : the option(s) as an array.
+  #
+  function parse_this_argument
+  {
+    while true; do
+      local -a this_input_list=()
+
+      case "${1}" in
+        #region Additional commands
+
+        "-u" \
+          | "--allow-unsafe" )
+          this_input_list=( "ALLOW_UNSAFE" )
+          ;;
+
+        "-c" \
+          | "--grub-cmdline" \
+          | "--grub-cmdline" )
+          local key="MATCH_CMDLINE"
+          this_input_list=( "${key}" )
+          shift
+
+          if ! append_numbered_input_list \
+              "${key}" \
+              "${1}"; then
+            return 1
+          fi
+          ;;
+
+        #endregion
+
+        #region Guest matches
+
+        "-d" \
+          | "--driver" \
+          | "--drivers" \
+          | "${ARGUMENT_MATCH_DRIVER}" )
+          local key="MATCH_DRIVER"
+          this_input_list=( "${key}" )
+          shift
+
+          if ! append_numbered_input_list \
+              "${key}" \
+              "${1}"; then
+            return 1
+          fi
+          ;;
+
+        "-g" \
+          | "--iommu-group" \
+          | "--iommu-groups" \
+          | "${ARGUMENT_MATCH_IOMMU_GROUP}" )
+          local key="MATCH_IOMMU_GROUP"
+          this_input_list=( "${key}" )
+          shift
+
+          if [[ "${1}" == "${OPTION_ALL}" ]]; then
+            if ! append_input_dict_list \
+                "${key}" \
+                "$( get_comma_list_of_iommu_group_ids ${1} )"; then
+              return 1
+            fi
+
+          else
+            if ! append_numbered_input_list \
+                "${key}" \
+                "${1}"; then
+              return 1
+            fi
+          fi
+          ;;
+
+        "-p" \
+          | "--pci-stub-id" \
+          | "--pci-stub-ids" \
+          | "${ARGUMENT_MATCH_PCI_STUB_HARDWARE_ID}" )
+          local key="MATCH_PCI_STUB_HARDWARE_ID"
+          this_input_list=( "${key}" )
+          shift
+
+          if ! append_numbered_input_list \
+              "${key}" \
+              "${1}"; then
+            return 1
+          fi
+          ;;
+
+        "-v" \
+        | "--vfio-pci-id" \
+        | "--vfio-pci-ids" \
+        | "${ARGUMENT_MATCH_VFIO_PCI_HARDWARE_ID}" )
+          local key="MATCH_VFIO_PCI_HARDWARE_ID"
+          this_input_list=( "${key}" )
+          shift
+
+          if ! append_numbered_input_list \
+              "${key}" \
+              "${1}"; then
+            return 1
+          fi
+          ;;
+
+        #endregion
+
+        #region Host matches
+
+        "--exclude-driver" \
+          | "--exclude-drivers" )
+          local key="UNMATCH_DRIVER"
+          this_input_list=( "${key}" )
+          shift
+
+          if ! append_numbered_input_list \
+              "${key}" \
+              "${1}"; then
+            return 1
+          fi
+          ;;
+
+        "--exclude-hardware-id" \
+          | "--exclude-hardware-ids" )
+          local key="UNMATCH_HARDWARE_ID"
+          this_input_list=( "${key}" )
+          shift
+
+          if ! append_numbered_input_list \
+              "${key}" \
+              "${1}"; then
+            return 1
+          fi
+          ;;
+
+        "--exclude-iommu-group" \
+          | "--exclude-iommu-groups" )
+          local key="UNMATCH_IOMMU_GROUP"
+          this_input_list=( "${key}" )
+          shift
+
+          if ! append_numbered_input_list \
+              "${key}" \
+              "${1}"; then
+            return 1
+          fi
+          ;;
+
+        #endregion
+
+        #region VFIO setups
+
+        "-D" \
+          | "--dynamic" )
+          this_input_list=( "DYNAMIC_SETUP" )
+          ;;
+
+        "-M" \
+          | "--multi-grub" \
+          | "--multiple-grub" )
+          this_input_list=( "MULTIPLE_GRUB_SETUP" )
+          ;;
+
+        "-S" \
+          | "--static" )
+          local key="STATIC_SETUP"
+          this_input_list=( "${key}" )
+          shift
+
+          if ! append_numbered_input_list \
+              "${key}" \
+              "${1}"; then
+            return 1
+          fi
+          ;;
+
+        #endregion
+
+        #region Essential commands
+
+        "-h" \
+          | "--help" )
+          INPUT_DICT["VERBOSE"]=true
+          print_usage
+          exit 2
+          ;;
+
+        "-v" \
+          | "--verbose" )
+          INPUT_DICT["VERBOSE"]=true
+          ;;
+
+        #endregion
+
+        #region Null command
+
+        "" )
+          return 0
+          ;;
+
+        * )
+          print_invalid_argument "${1}"
+          return 1
+          ;;
+
+        #endregion
+      esac
+
+      for this_input in "${this_input_list[@]}"; do
+        INPUT_DICT["${this_input}"]=true
+        INPUT_LIST+=( "${this_input}" )
+
+      done
+
+      shift
+    done
+
+    return 0
+  }
+
+  #
+  # $@ : the argument(s) as an array.
+  #
+  function print_invalid_argument
+  {
+    if ! is_verbose; then
+      return 1
+    fi
+
+    local message="Error: Invalid argument(s) specified."
+
+    if is_string "${@}"; then
+      message="${message::-1}: '${@}'"
+    fi
+
+    print_and_log_output "${message}"
+    print_usage
+    return 0
+  }
+
+  #
+  # $1 : the option as a string.
+  #
+  function print_invalid_option
+  {
+    if ! is_verbose; then
+      return 1
+    fi
+
+    local message="Error: Invalid option specified."
+
+    if is_string "${1}"; then
+      message="${message::-1}: '${1}'"
+    fi
+
+    print_and_log_output "${message}"
+    return 1
+  }
+
+  #
+  # $1 : the option as a string.
+  #
+  function print_invalid_option_and_exit
+  {
+    if ! is_verbose; then
+      exit 1
+    fi
+
+    local message="Error: Invalid option specified."
+
+    if is_string "${1}"; then
+      message="${message::-1}: '${1}'"
+    fi
+
+    print_and_log_output "${message}"
+    print_usage
+    exit 1
+  }
+
+  function print_usage
+  {
+    if ! is_verbose; then
+      return 0
+    fi
+
+    local -i column_prefix_count=28
+
+    echo -e "Usage:\t${SCRIPT_NAME} [ARGUMENTS]"
+
+    wrap_text \
+      false \
+      false \
+      false \
+      0 \
+      "${COLUMN_SIZE}" \
+      "Parse, sort, and display hardware IDs and device drivers by IOMMU group(s)."
+
+    wrap_text \
+      false \
+      false \
+      false \
+      0 \
+      "${COLUMN_SIZE}" \
+      "Version ${SCRIPT_VERSION}."
+
+    echo
+    echo -en "  -h, --help                "
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Print this help and exit."
+
+    echo -en "  -v, --verbose             "
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Show more output including queries and IOMMU groups."
+
+    echo -en "  -vv                       "
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Show all output."
+
+    echo -en "  -g, --group=GROUPS        "
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Match IOMMU group ID(s);"
+
+    echo -en "$( get_repeated_space 28 )"
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "GROUPS is a comma delimited list of positive numbers."
+
+    echo -en "  --ignore-group=GROUPS     "
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Reverse match IOMMU group ID(s);"
+
+    echo -en "$( get_repeated_space 28 )"
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "GROUPS is a comma delimited list of positive numbers."
+
+    echo -en "  -G, --graphics=INDEX      "
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Match all IOMMU groups without a graphics device," \
+      "and any IOMMU group (with a graphics device) whose INDEX matches the" \
+      "expected INDEX value(s). INDEX is not an IOMMU group ID;"
+
+    echo -en "$( get_repeated_space 28 )"
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "INDEX is a comma delimited list of postive non-zero numbers."
+
+    echo -en "  -H, --host                "
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Match IOMMU groups with at least one (1) or more Host devices."
+
+    echo -en "  -n, --name=NAME           "
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Match IOMMU group(s) with device name;"
+
+    echo -en "$( get_repeated_space 28 )"
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "NAME is a comma delimited list of text."
+
+    echo -en "  --ignore-name=NAME        "
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Reverse match IOMMU group(s) with device name;"
+
+    echo -en "$( get_repeated_space 28 )"
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "NAME is a comma delimited list of text."
+
+    echo -en "  -t, --type=TYPE           "
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Match IOMMU group(s) with device type;"
+
+    echo -en "$( get_repeated_space 28 )"
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "TYPE is a comma delimited list of text."
+
+    echo -en "  --ignore-type=TYPE        "
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Reverse match IOMMU group(s) with device type;"
+
+    echo -en "$( get_repeated_space 28 )"
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "TYPE is a comma delimited list of text."
+
+    echo -en "  -V, --vendor=VENDOR       "
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Match IOMMU group(s) with device vendor;"
+
+    echo -en "$( get_repeated_space 28 )"
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "VENDOR is a comma delimited list of text."
+
+    echo -en "  --ignore-vendor=VENDOR    "
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Reverse match IOMMU group(s) with device vendor;"
+
+    echo -en "$( get_repeated_space 28 )"
+    echo  # TODO: remove this line when XML support is complete.
+    echo -e "Examples:"
+    echo -en "  ${SCRIPT_NAME} " # do wrap_text for args here.
+
+    column_prefix_count=$(( "${#SCRIPT_NAME}" + 3 ))
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "--graphics 2,3"
+
+    echo -en "$( get_repeated_space 28 )"
+
+    column_prefix_count=28
+    text="Include the second and third matched IOMMU groups with graphics device(s). "
+    text+="Standard output includes: comma-delimited lists of selected hardware IDs, "
+    text+="drivers, and IOMMU group IDs."
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "${text}"
+
+    echo
+    echo -en "  ${SCRIPT_NAME} " # do wrap_text for args here.
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "-vv --ignore-name ether --pcie"
+
+    echo -en "$( get_repeated_space 28 )"
+
+    column_prefix_count=28
+    text="Match output of IOMMU groups with PCI/e devices, "
+    text+="and exclude any wired ethernet devices. "
+    text+="Verbose output includes: comma-delimited lists of selected hardware IDs, "
+    text+="drivers, and IOMMU group IDs; details of all IOMMU groups; and telemetry."
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "${text}"
+  }
+
+  function trim_input_lists
+  {
+    INPUT_DICT["MATCH_GROUP_LIST"]="$( \
+      truncate_index_from_delimited_list \
+        -1 \
+        "${INPUT_DICT["MATCH_GROUP_LIST"]}" \
+    )"
+
+    INPUT_DICT["UNMATCH_GROUP_LIST"]="$( \
+      truncate_index_from_delimited_list \
+        -1 \
+        "${INPUT_DICT["UNMATCH_GROUP_LIST"]}" \
+    )"
+
+    INPUT_DICT["MATCH_MAKE_LIST"]="$( \
+      truncate_index_from_delimited_list \
+        -1 \
+        "${INPUT_DICT["MATCH_MAKE_LIST"]}" \
+    )"
+
+    INPUT_DICT["UNMATCH_MAKE_LIST"]="$( \
+      truncate_index_from_delimited_list \
+        -1 \
+        "${INPUT_DICT["UNMATCH_MAKE_LIST"]}" \
+    )"
+
+    INPUT_DICT["MATCH_NAME_LIST"]="$( \
+      truncate_index_from_delimited_list \
+        -1 \
+        "${INPUT_DICT["MATCH_NAME_LIST"]}" \
+    )"
+
+    INPUT_DICT["UNMATCH_NAME_LIST"]="$( \
+      truncate_index_from_delimited_list \
+        -1 \
+        "${INPUT_DICT["UNMATCH_NAME_LIST"]}" \
+    )"
+
+    INPUT_DICT["MATCH_TYPE_LIST"]="$( \
+      truncate_index_from_delimited_list \
+        -1 \
+        "${INPUT_DICT["MATCH_TYPE_LIST"]}" \
+    )"
+
+    INPUT_DICT["UNMATCH_TYPE_LIST"]="$( \
+      truncate_index_from_delimited_list \
+        -1 \
+        "${INPUT_DICT["UNMATCH_TYPE_LIST"]}" \
+    )"
+
+    INPUT_DICT["MATCH_VIDEO_LIST"]="$( \
+      truncate_index_from_delimited_list \
+        -1 \
+        "${INPUT_DICT["MATCH_VIDEO_LIST"]}" \
+    )"
+
+    return 0
+  }
+
+  function verify_iommu_groups
+  {
+    local warning="Error: Invalid IOMMU group ID(s) specified. Please enter a "
+    warning+="number between '${MIN_IOMMU_GROUP_ID}' and '${MAX_IOMMU_GROUP_ID}'."
+
+    if ! is_comma_delimited_list_of_positive_numbers \
+        "${INPUT_DICT["MATCH_GROUP_LIST"]}" \
+      || [[ "$( \
+        echo "${INPUT_DICT["MATCH_GROUP_LIST"]}" \
+          | sort --reverse --version-sort \
+          | head --lines 1 \
+        )" -gt "${MAX_IOMMU_GROUP_ID}" ]]; then
+      print_and_log_output "${warning}"
+      return 1
+    fi
+
+    if ! is_comma_delimited_list_of_positive_numbers \
+        "${INPUT_DICT["UNMATCH_GROUP_LIST"]}" \
+      || [[ "$( \
+        echo "${INPUT_DICT["UNMATCH_GROUP_LIST"]}" \
+          | sort --reverse --version-sort \
+          | head --lines 1 \
+        )" -gt "${MAX_IOMMU_GROUP_ID}" ]]; then
+      print_and_log_output "${warning}"
+      return 1
+    fi
+  }
