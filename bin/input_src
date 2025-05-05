@@ -13,11 +13,8 @@
 
 declare -g SOURCE_PATH="${1}"
 
-source \
-  "${SOURCE_PATH}datatype_src"
-
-source \
-  "${SOURCE_PATH}file_src"
+source "${SOURCE_PATH}datatype_src"
+source "${SOURCE_PATH}file_src"
 
 #endregion
 

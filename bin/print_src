@@ -15,9 +15,7 @@ if ! is_string "${1}"; then
 fi
 
 declare -g SOURCE_PATH="${1}"
-
-source \
-  "${SOURCE_PATH}datatype_src"
+source "${SOURCE_PATH}datatype_src"
 
 #endregion
 
