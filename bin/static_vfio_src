@@ -48,10 +48,32 @@ source \
   #endregion
 
 DELIM=","
+
+# Regex for a string which may consist of the alphabet, hyphens, and/or
+# underscores.
 DRIVER_REGEX='^[a-zA-Z0-9_-]+$'
-DRIVER_DELIM_REGEX='^([a-zA-Z_-]+)(,[a-zA-Z_-]+)*$'
-HARDWARE_ID_REGEX='^([a-zA-Z0-9]{4}):([a-zA-Z0-9]{4})$'
-HARDWARE_ID_DELIM_REGEX='^([a-zA-Z0-9]{4}:[a-zA-Z0-9]{4})(,[a-zA-Z0-9]{4}:[a-zA-Z0-9]{4})*$'
+
+# Regex for a comma delimited list of items (alphabet, hyphens,
+# underscores) with optional leading and/or optional trailing commas.
+DRIVER_DELIM_REGEX='^,*([a-zA-Z0-9_-]+)(,[a-zA-Z0-9_-]+)*,*$'
+
+# Regex for a string which may consist of a colon delimited list of two items,
+# where the items may consist of four digits of alphanumeric characters.
+HARDWARE_ID_REGEX='^[a-zA-Z0-9]{4}:[a-zA-Z0-9]{4}$'
+
+# Regex for a comma delimited list of items (colon delimited list of two
+# items with four alphanumeric characters), with optional leading and/or
+# optional trailing commas.
+HARDWARE_ID_DELIM_REGEX='^(\s*,\s*|\s*([A-Za-z0-9]{4}:\s*[A-Za-z0-9]{4})\s*,\s*)*$'
+
+# Regex for a string which may consist of positive integers (including zero),
+# of any size.
+IOMMU_GROUP_ID_REGEX='^[0-9]+$'
+
+# Regex for a comma delimited list of positive integers (including zero), with
+# optional leading and/or optional trailing commas.
+IOMMU_GROUP_DELIM_REGEX='^,*([0-9]+)(,[0-9]+)*,*$'
+
 VFIO_PCI_DRIVER="vfio-pci"
 
 CMDLINE_DEFAULTS="quiet splash"
@@ -80,8 +102,16 @@ function static_vfio_src_main
 {
   local cmdline_prefix="${1}"
 
-  if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
-    && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
+  if is_string "${cmdline_prefix}" \
+    && has_unmatch \
+      "cmdline_prefix" \
+      "${DRIVER_DELIM_REGEX}" \
+    && has_unmatch \
+      "cmdline_prefix" \
+      "${HARDWARE_ID_DELIM_REGEX}" \
+    && has_unmatch \
+      "cmdline_prefix" \
+      "${IOMMU_GROUP_DELIM_REGEX}"; then
     cmdline_prefix="${cmdline_prefix//\"/}"
     shift
 
@@ -90,8 +120,31 @@ function static_vfio_src_main
   fi
 
   local vfio_pci_driver_delim="${1}"
+
+  if is_string "${vfio_pci_driver_delim}" \
+    && ! has_match \
+      "vfio_pci_driver_delim" \
+      "${DRIVER_DELIM_REGEX}"; then
+    return 2
+  fi
+
   local vfio_pci_hardware_id_delim="${2}"
+
+  if is_string "${vfio_pci_hardware_id_delim}" \
+    && ! has_match \
+      "vfio_pci_hardware_id_delim" \
+      "${HARDWARE_ID_DELIM_REGEX}"; then
+    return 2
+  fi
+
   local pci_stub_hardware_id_delim="${3}"
+
+  if is_string "${pci_stub_hardware_id_delim}" \
+    && ! has_match \
+      "pci_stub_hardware_id_delim" \
+      "${HARDWARE_ID_DELIM_REGEX}"; then
+    return 2
+  fi
 
   static_vfio_src_sanitize_delim \
     "${pci_stub_hardware_id_delim}" \

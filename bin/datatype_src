@@ -468,6 +468,57 @@ function has_match
 }
 
 #
+# $1 : the variable or enumerable as a reference.
+# $2 : the regex to unmatch.
+#
+function has_unmatch
+{
+  if ! is_string "${2}"; then
+    return 2
+  fi
+
+  local regex="${2}"
+
+  if ! is_variable "${1}"; then
+    if ! [[ "${1}" =~ "${regex}" ]]; then
+      return 1
+    fi
+
+    return 0
+  fi
+
+  local -n reference="${1}"
+
+  if ! is_enum "${1}"; then
+    if ! [[ "${reference}" =~ "${regex}" ]]; then
+      return 1
+    fi
+
+    return 0
+  fi
+
+  if is_array; then
+    for value in ${reference[@]}; do
+      if ! [[ "${value}" =~ "${regex}" ]]; then
+        return 1
+      fi
+    done
+
+    return 0
+  fi
+
+  for key in ${!reference[@]}; do
+    value=${reference["${key}"]}
+
+    if [[ "${value}" =~ "${regex}" ]]; then
+      return 1
+    fi
+  done
+
+  return 0
+}
+
+#
 # $1 : the enumerable as a reference.
 # $2 : the key to remove.
 #
