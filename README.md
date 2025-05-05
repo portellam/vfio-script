@@ -178,11 +178,13 @@ sudo bash installer.sh
 - Multiple GRUB VFIO setup
   - Define one or more persistent VFIO setup(s) as GRUB command line
   permutations, where one permutation may be chosen at Host machine startup.
+
+  - **Formula:**
 ```math
 \text{permutations}_{\text{total}} = \text{card}_{\text{graphics}} \times \text{kernel}_{\text{linux}}
 ```
-  - **Warning:** for this setup to work, a system must have two (2) or more
-  \( \text{cards}_{\text{graphics}} \), where at least two (2) are on separate
+  - **Warning:** for this setup to work, a system must have **two (2)** or more
+  graphics cards (GPUs), where at least **two (2)** are on separate
   IOMMU groups.
 
   - Modifies the following files:
