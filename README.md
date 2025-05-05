@@ -180,10 +180,11 @@ sudo bash installer.sh
   permutations.
   - Setup(s) are defined as individual GRUB boot menu entries, where one
   permutation may be chosen at Host machine startup.
-  - ```math
+  ```math
   \permutations_total \eq \groups_video * \kernels
   ```
-  - ```math
+
+  ```math
   \permutations_total \eq 2 \GPU * 2 \kernels_linux \eq 4 \setups
   ```
 
