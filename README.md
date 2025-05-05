@@ -85,10 +85,10 @@ sudo bash installer.sh
 
   -D, --dynamic            Define a temporary VFIO setup as a QEMU command line.
                            Append to a Libvirt hook or a Guest machine
-                           configuration file. VFIO setup may be
+                           configuration file. This VFIO setup may be
                            created/destroyed on a Guest startup/shutdown.
 
-  -M|--multiple-grub NUMS  Define one or more VFIO setup(s) as command line
+  -M|--multiple-grub NUMS  Define one or more VFIO setup(s) as GRUB command line
                            permutations; setup(s) are defined as individual
                            GRUB boot menu entries, where one permutation may be
                            chosen at Host machine startup.
@@ -98,7 +98,7 @@ sudo bash installer.sh
                            NUMS is a comma delimited list of positive numbers
                            representing selected kernel(s); multiply the
                            permutations by the number of available kernel(s) to
-                           use (sorted newest to oldest).
+                           be used (sorted newest to oldest).
                            Note: to use all available, input '0'.
 
   -S|--static OPT          Define a persistent VFIO setup.
