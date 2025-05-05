@@ -71,6 +71,8 @@ VIDEO_IOMMU_GROUP_LIST=()
 #
 function grub_vfio_src_main
 {
+  local cmdline_prefix="${1}"
+
   if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
     && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
     cmdline_prefix="${cmdline_prefix//\"/}"
@@ -96,7 +98,7 @@ function grub_vfio_src_main
 
 function grub_vfio_src_get_kernel_cmdline_iommu_driver
 {
-  cpu_vendor_id="$( \
+  local cpu_vendor_id="$( \
     lscpu \
     | grep \
       --extended-regexp \
@@ -126,14 +128,14 @@ function grub_vfio_src_get_kernel_cmdline_iommu_driver
 
 function grub_vfio_src_get_non_video_delims
 {
-  video_iommu_group_delim=$( \
+  local video_iommu_group_delim=$( \
     IFS=${DELIM}; \
     echo "${VIDEO_IOMMU_GROUP_LIST[*]}" \
   )
 
-  names_to_ignore_delim="ether"
+  local names_to_ignore_delim="ether"
 
-  output="$( \
+  local output="$( \
     eval \
       "${EXECUTABLE}" \
       --ignore-group ${video_iommu_group_delim} \
@@ -147,9 +149,9 @@ function grub_vfio_src_get_non_video_delims
 
 function grub_vfio_src_get_video_delim_lists
 {
-  index=1
-  max_index="${SAFE_MAX}"
-  output=""
+  local -i index=1
+  local -i max_index="${SAFE_MAX}"
+  local output=""
 
   if "${ALLOW_UNSAFE}"; then
     max_index=128
@@ -176,7 +178,7 @@ function grub_vfio_src_get_video_delim_lists
 
 function grub_vfio_src_update_grub
 {
-  output="Updating GRUB"
+  local output="Updating GRUB"
   print_output_to_log "${output}"
 
   if ! sudo \
@@ -230,7 +232,7 @@ function grub_vfio_src_verify_dependencies
 #
 function static_vfio_src_write_most_grub
 {
-  cmdline_prefix="${1}"
+  local cmdline_prefix="${1}"
 
   if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
     && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
@@ -240,7 +242,7 @@ function static_vfio_src_write_most_grub
     cmdline_prefix=""
   fi
 
-  max_parsed_kernels="${SAFE_MAX}"
+  local -a max_parsed_kernels="${SAFE_MAX}"
 
   if "${ALLOW_UNSAFE}"; then
     max_parsed_kernels="${1}"
@@ -251,7 +253,7 @@ function static_vfio_src_write_most_grub
     max_parsed_kernels="${1}"
   fi
 
-  default_index=0
+  local -i default_index=0
 
   if "${ALLOW_UNSAFE}"; then
     default_index="${2}"
@@ -262,9 +264,9 @@ function static_vfio_src_write_most_grub
     default_index="${2}"
   fi
 
-  match="/boot/vmli*"
+  local match="/boot/vmli*"
 
-  kernel_list=( \
+  local -a kernel_list=( \
     $( \
       ls \
         -1 \
@@ -283,7 +285,7 @@ function static_vfio_src_write_most_grub
     )
   )
 
-  disk=$( \
+  local disk=$( \
     df \
       / \
     | grep \
@@ -298,13 +300,13 @@ function static_vfio_src_write_most_grub
       --fields 1 \
   )
 
-  distro=$( \
+  local distro=$( \
     lsb_release \
       --id \
       --short \
   )
 
-  fstype=$( blkid \
+  local fstype=$( blkid \
       --match-tag TYPE \
     | grep \
       "${disk}" \
@@ -313,9 +315,9 @@ function static_vfio_src_write_most_grub
       --fields 2 \
   )
 
-  os=$( uname )
+  local os=$( uname )
 
-  uuid=$( \
+  local uuid=$( \
     blkid \
       --match-tag UUID \
     | grep \
@@ -325,7 +327,7 @@ function static_vfio_src_write_most_grub
       --fields 2 \
   )
 
-  output_list=(
+  local -a output_list=(
     "#!/bin/sh"
     "exec tail -n +3 \$0"
     "# This file provides an easy way to add custom menu entries. Simply type the"
@@ -334,10 +336,10 @@ function static_vfio_src_write_most_grub
     "#"
   )
 
-  default_title=""
-  index=0
-  matched_index=false
-  title_list=()
+  local default_title=""
+  local index=0
+  local matched_index=false
+  local -a title_list=()
 
   for kernel in "${kernel_list[@]}"; do
     for iommu_group in "${VIDEO_IOMMU_GROUP_LIST[@]}"; do
@@ -369,8 +371,8 @@ function static_vfio_src_write_most_grub
     done
   done
 
-  destination_path="/etc/grub.d/40_custom"
-  destination_dir=$( dirname "${destination_path}" )
+  local destination_path="/etc/grub.d/40_custom"
+  local destination_dir=$( dirname "${destination_path}" )
 
   if [[ ! -d "${destination_dir}" ]] \
     && ! sudo \
@@ -393,8 +395,8 @@ function static_vfio_src_write_most_grub
     return 1
   fi
 
-  destination_path="/etc/default/grub"
-  line_to_match="GRUB_DEFAULT="
+  local destination_path="/etc/default/grub"
+  local line_to_match="GRUB_DEFAULT="
 
   if [[ "${default_title}" == "" ]]; then
     line_grub_default="${line_to_match}${default_index}"
@@ -440,7 +442,7 @@ function static_vfio_src_write_this_grub
   local -n title_list_ref="${1}"
   shift
 
-  cmdline_prefix="${1}"
+  local cmdline_prefix="${1}"
 
   if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
     && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
@@ -450,27 +452,27 @@ function static_vfio_src_write_this_grub
     cmdline_prefix=""
   fi
 
-  iommu_group="${1}"
-  kernel="${2}"
-  distro="${3}"
-  fstype="${4}"
-  os="${5}"
-  uuid="${6}"
+  local iommu_group="${1}"
+  local kernel="${2}"
+  local distro="${3}"
+  local fstype="${4}"
+  local os="${5}"
+  local uuid="${6}"
 
-  vfio_pci_driver_delim="${7}"
-  vfio_pci_hardware_id_delim="${8}"
-  pci_stub_hardware_id_delim="${9}"
+  local vfio_pci_driver_delim="${7}"
+  local vfio_pci_hardware_id_delim="${8}"
+  local pci_stub_hardware_id_delim="${9}"
 
-  cmdline="modprobe.blacklist=${vfio_pci_driver_delim} "
+  local cmdline="modprobe.blacklist=${vfio_pci_driver_delim} "
   cmdline+="pci_stub.ids=${pci_stub_hardware_id_delim} "
   cmdline+="vfio_pci.ids=${vfio_pci_hardware_id_delim} "
   cmdline="${CMDLINE_PREFIX}${cmdline_prefix}${cmdline::-1}"
   cmdline="GRUB_CMDLINE_LINUX_DEFAULT=\"${cmdline}\""
 
-  partial_title="VFIO w/o IOMMU group '${iommu_group}';"
+  local partial_title="VFIO w/o IOMMU group '${iommu_group}';"
   partial_title+=" Video: '${this_iommu_group_vga_name}'"
 
-  title="${distro}, with ${os} ${kernel} (${partial_title})"
+  local title="${distro}, with ${os} ${kernel} (${partial_title})"
   title_list_ref+=( "${title}" )
 
   output_list_ref+=(

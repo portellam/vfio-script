@@ -78,7 +78,7 @@ CMDLINE_PREFIX+="${CMDLINE_UNSET_FRAMEBUFFER} ${CMDLINE_FOR_WINDOWS10}"
 #
 function static_vfio_src_main
 {
-  cmdline_prefix="${1}"
+  local cmdline_prefix="${1}"
 
   if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
     && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
@@ -89,9 +89,9 @@ function static_vfio_src_main
     cmdline_prefix=""
   fi
 
-  vfio_pci_driver_delim="${1}"
-  vfio_pci_hardware_id_delim="${2}"
-  pci_stub_hardware_id_delim="${3}"
+  local vfio_pci_driver_delim="${1}"
+  local vfio_pci_hardware_id_delim="${2}"
+  local pci_stub_hardware_id_delim="${3}"
 
   static_vfio_src_sanitize_delim \
     "${pci_stub_hardware_id_delim}" \
@@ -163,7 +163,7 @@ function static_vfio_src_main
 
 function static_vfio_src_get_kernel_cmdline_iommu_driver
 {
-  cpu_vendor_id="$( \
+  local cpu_vendor_id="$( \
     lscpu \
     | grep \
       --extended-regexp \
@@ -211,8 +211,8 @@ function static_vfio_src_sanitize_delim
   fi
 
   local -n delim="${1}"
-  regex="${2}"
-  delim_regex="${3}"
+  local regex="${2}"
+  local delim_regex="${3}"
 
   if ! [[ "${delim}" =~ "${delim_regex}" ]]; then
     read \
@@ -231,7 +231,7 @@ function static_vfio_src_sanitize_delim
     done
   fi
 
-  last_char="$( \
+  local last_char="$( \
     echo \
     ${delim:${#delim}-1} \
   )"
@@ -243,7 +243,7 @@ function static_vfio_src_sanitize_delim
 
 function static_vfio_src_update_grub
 {
-  output="Updating GRUB"
+  local output="Updating GRUB"
   print_output_to_log "${output}"
 
   if ! sudo \
@@ -257,7 +257,7 @@ function static_vfio_src_update_grub
 
 function static_vfio_src_update_initramfs
 {
-  output="Updating initramfs"
+  local output="Updating initramfs"
   print_output_to_log "${output}"
 
   if ! sudo \
@@ -280,7 +280,7 @@ function static_vfio_src_update_initramfs
 #
 function static_vfio_src_write_grub
 {
-  cmdline_prefix="${1}"
+  local cmdline_prefix="${1}"
 
   if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
     && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
@@ -290,18 +290,18 @@ function static_vfio_src_write_grub
     cmdline_prefix=""
   fi
 
-  vfio_pci_driver_delim="${1}"
-  vfio_pci_hardware_id_delim="${2}"
-  pci_stub_hardware_id_delim="${3}"
+  local vfio_pci_driver_delim="${1}"
+  local vfio_pci_hardware_id_delim="${2}"
+  local pci_stub_hardware_id_delim="${3}"
 
-  cmdline="modprobe.blacklist=${vfio_pci_driver_delim} "
+  local cmdline="modprobe.blacklist=${vfio_pci_driver_delim} "
   cmdline+="pci_stub.ids=${pci_stub_hardware_id_delim} "
   cmdline+="vfio_pci.ids=${vfio_pci_hardware_id_delim} "
   cmdline="${CMDLINE_PREFIX}${cmdline_prefix}${cmdline::-1}"
 
-  destination_path="/etc/default/grub"
-  line_to_match="GRUB_CMDLINE_LINUX_DEFAULT="
-  line_to_replace="${line_to_match}\"${cmdline}\""
+  local destination_path="/etc/default/grub"
+  local line_to_match="GRUB_CMDLINE_LINUX_DEFAULT="
+  local line_to_replace="${line_to_match}\"${cmdline}\""
 
   if ! sed \
     --in-place '/'"${line_to_match}"'/c\'"${line_to_replace}" \
@@ -319,20 +319,20 @@ function static_vfio_src_write_grub
 #
 function static_vfio_src_write_initramfs
 {
-  vfio_pci_driver_delim="${1}"
-  vfio_pci_hardware_id_delim="${2}"
-  pci_stub_hardware_id_delim="${3}"
+  local vfio_pci_driver_delim="${1}"
+  local vfio_pci_hardware_id_delim="${2}"
+  local pci_stub_hardware_id_delim="${3}"
 
-  partial_path="initramfs-tools/modules"
-  source_path="${SOURCE_ETC_PATH}/${partial_path}"
-  destination_path="/etc/${partial_path}"
+  local partial_path="initramfs-tools/modules"
+  local source_path="${SOURCE_ETC_PATH}/${partial_path}"
+  local destination_path="/etc/${partial_path}"
 
   read \
     -r \
     -a vfio_pci_driver_list \
     <<< "${vfio_pci_driver_delim}"
 
-  line_list=()
+  local -a line_list=()
 
   for driver in "${vfio_pci_driver_list[@]}"; do
     line_list+=( "blacklist ${driver}" )
@@ -372,18 +372,18 @@ function static_vfio_src_write_initramfs
 #
 function static_vfio_src_write_modprobe_blacklists
 {
-  vfio_pci_driver_delim="${1}"
+  local vfio_pci_driver_delim="${1}"
 
   read \
     -r \
     -a vfio_pci_driver_list \
     <<< "${vfio_pci_driver_delim}"
 
-  partial_path="modprobe.d/pci-blacklists.conf"
-  source_path="${SOURCE_ETC_PATH}/${partial_path}"
-  destination_path="/etc/${partial_path}"
+  local partial_path="modprobe.d/pci-blacklists.conf"
+  local source_path="${SOURCE_ETC_PATH}/${partial_path}"
+  local destination_path="/etc/${partial_path}"
 
-  line_list=()
+  local -a line_list=()
 
   for driver in "${vfio_pci_driver_list[@]}"; do
     line_list+=( "blacklist ${driver}" )
@@ -405,18 +405,18 @@ function static_vfio_src_write_modprobe_blacklists
 #
 function static_vfio_src_write_modprobe_vfio
 {
-  vfio_pci_driver_delim="${1}"
-  vfio_pci_hardware_id_delim="${2}"
-  pci_stub_hardware_id_delim="${3}"
+  local vfio_pci_driver_delim="${1}"
+  local vfio_pci_hardware_id_delim="${2}"
+  local pci_stub_hardware_id_delim="${3}"
 
   read \
     -r \
     -a vfio_pci_driver_list \
     <<< "${vfio_pci_driver_delim}"
 
-  partial_path="modprobe.d/vfio.conf"
-  source_path="${SOURCE_ETC_PATH}/${partial_path}"
-  destination_path="/etc/${partial_path}"
+  local partial_path="modprobe.d/vfio.conf"
+  local source_path="${SOURCE_ETC_PATH}/${partial_path}"
+  local destination_path="/etc/${partial_path}"
 
   if [[ ! -z "${pci_stub_hardware_id_delim}" ]]; then
     hardware_id_delim="${pci_stub_hardware_id_delim},"
@@ -438,7 +438,7 @@ function static_vfio_src_write_modprobe_vfio
     return 1
   fi
 
-  line_list=()
+  local -a line_list=()
 
   for driver in "${vfio_pci_driver_list[@]}"; do
     line_list=(
@@ -462,15 +462,15 @@ function static_vfio_src_write_modprobe_vfio
 #
 function static_vfio_src_write_modules
 {
-  vfio_pci_driver_delim="${1}"
+  local vfio_pci_driver_delim="${1}"
 
   read \
     -r \
     -a vfio_pci_driver_list \
     <<< "${vfio_pci_driver_delim}"
 
-  partial_path="modules"
-  destination_path="/etc/${partial_path}"
+  local partial_path="modules"
+  local destination_path="/etc/${partial_path}"
 
   if ! sed \
     --in-place "/# vfio_pci ids=*/c\vfio_pci_ids=\"${HWID_DELIM}\"" \
@@ -481,7 +481,7 @@ function static_vfio_src_write_modules
   fi
 
   for driver in "${vfio_pci_driver_list[@]}"; do
-    line="softdep ${driver} pre: ${VFIO_PCI_DRIVER}"
+    local line="softdep ${driver} pre: ${VFIO_PCI_DRIVER}"
 
     if ! sed \
       --in-place "7i ${line}" \
