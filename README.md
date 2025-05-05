@@ -169,38 +169,41 @@ sudo bash installer.sh
 ```
 
 #### 5.3. Major features
-1. Dynamic VFIO setup
-- Define a temporary VFIO setup as a QEMU command line. Append to a Libvirt hook
-or a Guest machine configuration file. This VFIO setup may be created/destroyed
-on a Guest startup/shutdown.
+- Dynamic VFIO setup
+  - Define a temporary VFIO setup as a QEMU command line.
+  - Append to a Libvirt hook or a Guest machine configuration file.
+  - This VFIO setup may be created/destroyed
+  on a Guest startup/shutdown.
 
-2. Multiple GRUB VFIO setup
-- Define one or more persistent VFIO setup(s) as GRUB command line permutations;
-setup(s) are defined as individual GRUB boot menu entries, where one permutation
-may be chosen at Host machine startup.
-  - Formula: `Total permutations`
-  = `individual IOMMU groups with at least one (1) GPU/video output`
-  x `number of selected system kernels`.
-  - For example:
-  `two (2) GPUs on two different IOMMU groups (or PCIe slots)`
-  x `two selected and installed Linux kernels`
-  = four (4) boot menu entries.
+- Multiple GRUB VFIO setup
+  - Define one or more persistent VFIO setup(s) as GRUB command line
+  permutations, where one permutation may be chosen at Host machine startup.
+  - **Formulae:**
+    - &ensp;&ensp; \( \text{permutations}_{\text{total}} = \text{GPUs} \times \text{kernels} \)
 
-- Modifies the following files:
-  - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
-  - **overwrites** `/etc/default/grub` to define the default boot menu entry.
+    - &ensp; \( \text{permutations}_{\text{total}} = \text{kernels} \times \text{IOMMU Groups}_{\text{WITH VIDEO FOR VFIO}} \)
 
-3. Static VFIO setup
-- Define a persistent VFIO setup.
+    - &ensp; \( \text{IOMMU Groups}_{\text{WITH VIDEO FOR VFIO}} = \text{IOMMU Groups}_{\text{TOTAL WITH VIDEO}} - \text{IOMMU Groups}_{\text{WITH VIDEO FOR HOST}} \)
 
-- Modifies either of the following files:
-  - GRUB: `/etc/default/grub`
+    - &ensp; \( \text{IOMMU Groups}_{\text{WITH VIDEO FOR HOST}} \geq 1 \)
 
-  - system configuration files:
-    - **overwrites** `/etc/initramfs-tools/modules`
-    - creates `/etc/modprobe.d/pci-blacklists.conf
-    - creates `/etc/modprobe.d/vfio.conf
-    - **overwrites** `/etc/modules`
+    - &ensp; \( \text{IOMMU Groups}_{\text{WITH VIDEO FOR VFIO}} \geq 0 \)
+
+  - Modifies the following files:
+    - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
+    - **overwrites** `/etc/default/grub` to define the default boot menu entry.
+
+- Static VFIO setup
+  - Define a persistent VFIO setup.
+
+  - Modifies either of the following files:
+    - GRUB: `/etc/default/grub`
+
+    - system configuration files:
+      - **overwrites** `/etc/initramfs-tools/modules`
+      - creates `/etc/modprobe.d/pci-blacklists.conf
+      - creates `/etc/modprobe.d/vfio.conf
+      - **overwrites** `/etc/modules`
 
 #### TODO:
 - [ ] sanitize inputs.
