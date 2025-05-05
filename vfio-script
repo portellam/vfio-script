@@ -1,0 +1,65 @@
+#!/bin/bash
+
+#
+# Project:        vfio-script
+# Filename:       vfio-script
+# Description:    Easily install, uninstall, or reinstall a VFIO setup on a
+#                 Linux machine. Choose between a dynamic, GRUB, or static
+#                 setup.
+# Author(s):      Alex Portell <github.com/portellam>
+# Maintainer(s):  Alex Portell <github.com/portellam>
+# Version:        0.0.1
+#
+
+#region Params
+
+SCRIPT_FILE="$( basename "${0}" )"
+SCRIPT_VERSION="0.0.1"
+SOURCE_PATH="/usr/local/bin/${SCRIPT_FILE}.d/"
+COLUMN_SIZE="$( tput cols )"
+
+#endregion
+
+#region Sources
+
+source \
+  "${SOURCE_PATH}input_src" \
+  "${SOURCE_PATH}" \
+  "${SCRIPT_FILE}" \
+  "${SCRIPT_VERSION}"
+
+source \
+  "${SOURCE_PATH}parse_src" \
+  "${SOURCE_PATH}" \
+  "${SCRIPT_FILE}" \
+  "${SCRIPT_VERSION}"
+
+source \
+  "${SOURCE_PATH}query_src" \
+  "${SOURCE_PATH}" \
+  "${COLUMN_SIZE}" \
+  "${INPUT_DICT["XML_FILE"]}"
+
+#endregion
+
+#region Logic
+
+function main
+{
+  set_tabspace_size
+
+  if ! parse_many_arguments "${@}" \
+    || ! vfio_setup_src_main; then
+    return 1
+  fi
+
+  return 0
+}
+
+#endregion
+
+#region Program
+
+main "${@}"
+
+#endregion
