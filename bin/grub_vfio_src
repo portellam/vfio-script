@@ -2,11 +2,11 @@
 
 #
 # Filename:       grub_vfio_src
-# Version:        0.0.1
 # Description:    Define one or more VFIO setup(s), as distinct GRUB menu
 #                 entries.
 # Author(s):      Alex Portell <github.com/portellam>
 # Maintainer(s):  Alex Portell <github.com/portellam>
+# Version:        0.0.1
 #
 
 #region Sources

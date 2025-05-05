@@ -2,11 +2,11 @@
 
 #
 # Filename:       static_vfio_src
-# Version:        0.0.1
 # Description:    Define a static VFIO setup, either by GRUB command line or
 #                 various configuration files.
 # Author(s):      Alex Portell <github.com/portellam>
 # Maintainer(s):  Alex Portell <github.com/portellam>
+# Version:        0.0.1
 #
 
 #
