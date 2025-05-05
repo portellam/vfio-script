@@ -605,8 +605,7 @@ source \
       "${COLUMN_SIZE}" \
       "Define one or more VFIO setup(s) as command line permutations; setup(s) are defined as individual GRUB boot menu entries, where one permutation may be chosen at Host machine startup. Note: multiple GPUs on separate IOMMU groups will create multiple permutations."
 
-    echo
-    echo -en "$( get_repeated_space 28 )"
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
     wrap_text \
       false \
@@ -616,7 +615,6 @@ source \
       "${COLUMN_SIZE}" \
       "NUMS is a comma delimited list of positive numbers representing selected kernel(s); multiply the  permutations by the number of available kernel(s) to  use (sorted newest to oldest). Note: to use all available, input '0'."
 
-    echo
     echo -en "  -S|--static OPT          "
 
     wrap_text \
@@ -627,8 +625,7 @@ source \
       "${COLUMN_SIZE}" \
       "Define a persistent VFIO setup."
 
-    echo
-    echo -en "$( get_repeated_space 28 )"
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
     wrap_text \
       false \
@@ -664,9 +661,11 @@ source \
 
     #region Additional arguments
 
+    column_prefix_count=24
+
     echo
     echo -e "Additional arguments:\n"
-    echo -en "--allow-unsafe       "
+    echo -en "  --allow-unsafe       "
 
     wrap_text \
       false \
@@ -687,8 +686,7 @@ source \
       "${COLUMN_SIZE}" \
       "Define the GRUB command line. Note: avoid escape characters, such as double-quote (\") and/or VFIO commands so as to prevent conflicts."
 
-    echo
-    echo -en "$( get_repeated_space 28 )"
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
     wrap_text \
       false \
@@ -702,6 +700,8 @@ source \
 
     #region Guest-machine-reserved devices to match
 
+    column_prefix_count=29
+
     echo
     echo -e "Guest-machine-reserved devices to match:\n"
     echo -en "  -g|--iommu-groups GROUPS  "
@@ -714,8 +714,7 @@ source \
       "${COLUMN_SIZE}" \
       "Specify which IOMMU groups may be reserved for any Guest machine."
 
-    echo
-    echo -en "$( get_repeated_space 28 )"
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
     wrap_text \
       false \
@@ -736,8 +735,7 @@ source \
       "${COLUMN_SIZE}" \
       "Specify which devices' drivers to override with the \"vfio-pci\" driver."
 
-    echo
-    echo -en "$( get_repeated_space 28 )"
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
     wrap_text \
       false \
@@ -757,8 +755,7 @@ source \
       "${COLUMN_SIZE}" \
       "Specify which devices' IDs to blacklist."
 
-    echo
-    echo -en "$( get_repeated_space 28 )"
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
     wrap_text \
       false \
@@ -779,8 +776,7 @@ source \
       "${COLUMN_SIZE}" \
       "Specify which devices' IDs to blacklist and drivers to override with the \"pci-stub\" driver."
 
-    echo
-    echo -en "$( get_repeated_space 28 )"
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
     wrap_text \
       false \
@@ -794,6 +790,8 @@ source \
 
     #region Host-machine-reserved devices to match
 
+    column_prefix_count=35
+
     echo
     echo -e "Host-machine-reserved devices to match:\n"
     echo -en "  --exclude-drivers DRIVERS       "
@@ -804,10 +802,9 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "DRIVERS is a comma delimited list of text."
+      "Specify which devices' drivers to not override with a VFIO driver, if not defined within \"--drivers\"."
 
-    echo
-    echo -en "$( get_repeated_space 28 )"
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
     wrap_text \
       false \
@@ -815,7 +812,7 @@ source \
       true \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "OPT DESC"
+      "DRIVERS is a comma delimited list of text."
 
     echo
     echo -en "  --exclude--iommu-groups GROUPS  "
@@ -828,8 +825,7 @@ source \
       "${COLUMN_SIZE}" \
       "Specify which IOMMU groups may be reserved for  the Host machine, if not defined within \"--iommu-groups\"."
 
-    echo
-    echo -en "$( get_repeated_space 28 )"
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
     wrap_text \
       false \
@@ -850,8 +846,7 @@ source \
       "${COLUMN_SIZE}" \
       "Specify which devices' IDs to whitelist, if not defined within \"--vfio-pci-ids\" or \"--pci-stub-ids\"."
 
-    echo
-    echo -en "$( get_repeated_space 28 )"
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
     wrap_text \
       false \
@@ -880,7 +875,7 @@ source \
       "${COLUMN_SIZE}" \
       "--graphics 2,3"
 
-    echo -en "$( get_repeated_space 28 )"
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
     column_prefix_count=28
     text="Include the second and third matched IOMMU groups with graphics device(s). "
@@ -906,7 +901,7 @@ source \
       "${COLUMN_SIZE}" \
       "-vv --ignore-name ether --pcie"
 
-    echo -en "$( get_repeated_space 28 )"
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
     column_prefix_count=28
     text="Match output of IOMMU groups with PCI/e devices, "
