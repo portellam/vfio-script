@@ -181,7 +181,7 @@ sudo bash installer.sh
 
   - **Formula:**
 ```math
-\text{permutations}_{\text{total}} = \text{video} \times \text{kernel}
+\text{permutations}_{\text{total}} = \text{GPUs} \times \text{kernels}
 ```
   - **Warning:** for this setup to work, a system must have **two (2)** or more
   graphics cards (GPUs), where at least **two (2)** are on separate
