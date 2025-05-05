@@ -1,0 +1,104 @@
+#!/bin/bash
+
+#
+# Project:        vfio-script
+# Filename:       vfio_setup_src
+# Description:    User interaction to select an available VFIO setup.
+# Author(s):      Alex Portell <github.com/portellam>
+# Maintainer(s):  Alex Portell <github.com/portellam>
+# Version:        0.0.1
+#
+
+#region Sources
+
+SOURCE_PATH="${1}"
+shift
+COLUMN_SIZE="$( tput cols )"
+
+source \
+  "${SOURCE_PATH}print_src" \
+  "${SOURCE_PATH}" \
+  "${COLUMN_SIZE}"
+
+#endregion
+
+#region Logic
+
+function vfio_setup_src_main
+{
+  echo
+}
+
+#
+# $1 : true/false enable verbosity.
+# $2 : true/false skip prompt.
+# $3 : the comma delimited list of IOMMU groups to exclude.
+#
+function vfio_setup_src_select_groups
+{
+  if ! is_boolean "${1}" \
+    || ! is_boolean "${2}" \
+    || ! is_string "${3}"; then
+    return 1
+  fi
+
+  do_enable_verbosity="${1}"
+  do_skip_prompt="${2}"
+  iommu_groups_to_exclude_delim="${3}"
+}
+
+#
+# $1 : true/false enable verbosity.
+# $2 : the match to select a VFIO setup.
+#
+function vfio_setup_src_select_setup
+{
+  if ! is_boolean "${1}" \
+    || ! is_string "${2}"; then
+    return 1
+  fi
+
+  enable_verbosity="${1}"
+  match="${2}"
+
+  for index in $( seq 0 2 ); do
+    case "${match,,}" in
+      "dynamic" )
+        if ! dynamic_vfio_src \
+          "${enable_verbosity}"; then
+          return 1
+        fi
+
+        return 0
+        ;;
+
+      "grub" )
+        if ! grub_vfio_src \
+          "${enable_verbosity}"; then
+          return 1
+        fi
+
+        return 0
+        ;;
+
+      "static" )
+        if ! static_vfio_src \
+          "${enable_verbosity}"; then
+          return 1
+        fi
+
+        return 0
+        ;;
+
+      * )
+        print_error_to_log "Invalid choice."
+        ;;
+
+    esac
+  done
+
+  print_fail_to_log "Failed to select a VFIO setup."
+  return 1
+}
+
+#endregion
