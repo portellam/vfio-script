@@ -143,20 +143,6 @@ source \
     return 0
   }
 
-  function get_comma_list_of_iommu_group_ids
-  {
-    seq \
-      "${MIN_IOMMU_GROUP_ID}" \
-      "${MAX_IOMMU_GROUP_ID}" \
-    | tr \
-      '\n' \
-      ',' \
-    | sed \
-      's:,*$::'
-
-    echo
-  }
-
   #
   # $1 : the argument as a string.
   #
@@ -271,22 +257,6 @@ source \
     return 0
   }
 
-  function is_verbose_doubled
-  {
-    if ! "${INPUT_DICT["VERBOSE_DOUBLE"]}"; then
-      return 1
-    fi
-
-    return 0
-  }
-
-  function match_all_groups
-  {
-    parse_this_argument \
-      "${ARGUMENT_MATCH_GROUP}" \
-      "${OPTION_ALL}"
-  }
-
   #
   # $@ : the argument(s) as an array.
   #
@@ -358,19 +328,10 @@ source \
           this_input_list=( "${key}" )
           shift
 
-          if [[ "${1}" == "${OPTION_ALL}" ]]; then
-            if ! append_input_dict_list \
-                "${key}" \
-                "$( get_comma_list_of_iommu_group_ids ${1} )"; then
-              return 1
-            fi
-
-          else
-            if ! append_numbered_input_list \
-                "${key}" \
-                "${1}"; then
-              return 1
-            fi
+          if ! append_numbered_input_list \
+              "${key}" \
+              "${1}"; then
+            return 1
           fi
           ;;
 
@@ -932,32 +893,4 @@ source \
     )"
 
     return 0
-  }
-
-  function verify_iommu_groups
-  {
-    local warning="Error: Invalid IOMMU group ID(s) specified. Please enter a "
-    warning+="number between '${MIN_IOMMU_GROUP_ID}' and '${MAX_IOMMU_GROUP_ID}'."
-
-    if ! is_comma_delimited_list_of_positive_numbers \
-        "${INPUT_DICT["MATCH_GROUP_LIST"]}" \
-      || [[ "$( \
-        echo "${INPUT_DICT["MATCH_GROUP_LIST"]}" \
-          | sort --reverse --version-sort \
-          | head --lines 1 \
-        )" -gt "${MAX_IOMMU_GROUP_ID}" ]]; then
-      print_and_log_output "${warning}"
-      return 1
-    fi
-
-    if ! is_comma_delimited_list_of_positive_numbers \
-        "${INPUT_DICT["UNMATCH_GROUP_LIST"]}" \
-      || [[ "$( \
-        echo "${INPUT_DICT["UNMATCH_GROUP_LIST"]}" \
-          | sort --reverse --version-sort \
-          | head --lines 1 \
-        )" -gt "${MAX_IOMMU_GROUP_ID}" ]]; then
-      print_and_log_output "${warning}"
-      return 1
-    fi
   }
