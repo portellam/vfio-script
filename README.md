@@ -183,18 +183,9 @@ sudo bash installer.sh
 
   **Determine number of GRUB boot menu entries**
 
----
-# Math frontmatter:
-math:
-  # Note the 'single quotes'
-  '\dobs': '\mathbf{d}_\text{obs}'
-  '\dpred': '\mathbf{d}_\text{pred}\left( #1 \right)'
-  '\mref': '\mathbf{m}_\text{ref}'
----
-
-```math
-The residual is the predicted data for the model, $\dpred{m}$, minus the observed data, $\dobs$. You can also calculate the predicted data for the reference model $\dpred{\mref}$.
-```
+\[
+\text{permutations} = \text{cards} \times \text{kernels}
+\]
 
   - Modifies the following files:
     - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
