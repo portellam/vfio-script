@@ -184,8 +184,13 @@ sudo bash installer.sh
   **Determine number of GRUB boot menu entries**
 
 ```math
-\text{permutations} = \text{cards} \times \text{kernels}
+\text{permutations_total} = \text{groups_IOMMU} \times \text{kernels}
 ```
+
+```math
+\text{entries_GRUB} = \text{cards_graphics} \times \text{kernels_linux}
+```
+
 
   - Modifies the following files:
     - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
