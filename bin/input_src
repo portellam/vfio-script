@@ -345,7 +345,7 @@ source \
           fi
           ;;
 
-        "-v" \
+        "-V" \
         | "--vfio-pci-id" \
         | "--vfio-pci-ids" \
         | "${ARGUMENT_MATCH_VFIO_PCI_HARDWARE_ID}" )
@@ -683,11 +683,11 @@ source \
 
     #region Additional arguments
 
-    column_prefix_count=24
+    column_prefix_count=28
 
     echo
     echo -e "Additional arguments:\n"
-    echo -en "  --allow-unsafe       "
+    echo -en "  -u, --allow-unsafe       "
 
     wrap_text \
       false \
@@ -695,10 +695,30 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "Override safety limits. Override a maximum amount of permutations, and/or features which may repeat a given command many times. Note: safety limits are five (5) units each. Note: no prompt at execution."
+      "Override safety limits. Override a maximum amount of permutations, and/or features which may repeat a given command many times."
+
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Note: safety limits are five (5) units each."
+
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Note: no prompt at execution."
 
     echo
-    echo -en "  --grub-cmdline TEXT  "
+    echo -en "  -c, --grub-cmdline TEXT  "
 
     wrap_text \
       false \
@@ -706,7 +726,17 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "Define the GRUB command line. Note: avoid escape characters, such as double-quote (\") and/or VFIO commands so as to prevent conflicts."
+      "Define the GRUB command line."
+
+    echo -en "$( get_repeated_space "${column_prefix_count}" )"
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Note: avoid escape characters, such as double-quote (\") and/or VFIO commands so as to prevent conflicts."
 
     echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
@@ -768,7 +798,7 @@ source \
       "DRIVERS is a comma delimited list of text."
 
     echo
-    echo -en "  -v|--vfio-pci-ids HWIDS   "
+    echo -en "  -V|--vfio-pci-ids HWIDS   "
 
     wrap_text \
       false \
@@ -846,7 +876,7 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "Specify which IOMMU groups may be reserved for  the Host machine, if not defined within \"--iommu-groups\"."
+      "Specify which IOMMU groups may be reserved for the Host machine, if not defined within \"--iommu-groups\"."
 
     echo -en "$( get_repeated_space "${column_prefix_count}" )"
 

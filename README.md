@@ -109,18 +109,18 @@ sudo bash installer.sh
 
   Additional arguments:
 
-  --allow-unsafe       Override safety limits. Override a maximum amount of
-                       permutations, and/or features which may repeat a given
-                       command many times.
-                       Note: safety limits are five (5) units each.
-                       Note: no prompt at execution.
+  -u, --allow-unsafe       Override safety limits. Override a maximum amount of
+                           permutations, and/or features which may repeat a given
+                           command many times.
+                           Note: safety limits are five (5) units each.
+                           Note: no prompt at execution.
 
 
-  --grub-cmdline TEXT  Define the GRUB command line.
-                       Note: avoid escape characters, such as double-quote (")
-                       and/or VFIO commands so as to prevent conflicts.
+  -c, --grub-cmdline TEXT  Define the GRUB command line.
+                           Note: avoid escape characters, such as double-quote (")
+                           and/or VFIO commands so as to prevent conflicts.
 
-                       TEXT is whitespace delimited text.
+                           TEXT is whitespace delimited text.
 
   Guest-machine-reserved devices to match:
 
@@ -134,7 +134,7 @@ sudo bash installer.sh
 
                             DRIVERS is a comma delimited list of text.
 
-  -v|--vfio-pci-ids HWIDS   Specify which devices' IDs to blacklist.
+  -V|--vfio-pci-ids HWIDS   Specify which devices' IDs to blacklist.
 
                             HWIDS is a comma delimited list of text.
 
