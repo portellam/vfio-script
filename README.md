@@ -180,12 +180,12 @@ sudo bash installer.sh
   permutations.
   - Setup(s) are defined as individual GRUB boot menu entries, where one
   permutation may be chosen at Host machine startup.
-  - Total permutations
-  **=** individual IOMMU groups with at least `one (1)` GPU/video output
-  **x** `number` of selected system kernels.
-  - `two (2)` GPUs on two different IOMMU groups (or PCIe slots)
-  **x** `two (2)` selected and installed Linux kernels
-  **=** `four (4)` boot menu entries.
+  - `Total permutations`
+  **=** `individual IOMMU groups with at least **one (1)** GPU/video output`
+  **x** `**number** of selected system kernels`
+  - `**two (2)** GPUs on two different IOMMU groups (or PCIe slots)`
+  **x** `**two (2)** selected and installed Linux kernels`
+  **=** `**four (4)** boot menu entries.`
 
   - Modifies the following files:
     - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
