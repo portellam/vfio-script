@@ -188,7 +188,7 @@ sudo bash installer.sh
   ```
 
   ```math
-  \entries_t \eq \graphics \kernels
+  $\entries_t$ \eq $\graphics$ $\kernels$
   ```
 
   - Modifies the following files:
