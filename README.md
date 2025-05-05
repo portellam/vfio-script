@@ -78,73 +78,91 @@ sudo bash installer.sh
 - From anywhere, execute: `vfio-script`
 
 ```
-  -h, --help                Print this help and exit.
-  -v, --verbose             Show more output.
+  -h, --help     Print this help and exit.
+  -v, --verbose  Show more output.
 
-  -D, --dynamic             Define a temporary VFIO setup as a QEMU command
-                            line. Append to a Libvirt hook or a Guest machine
-                            configuration file. VFIO setup may be
-                            created/destroyed on a Guest startup/shutdown.
+  VFIO setups:
 
-  -G, --grub                Define one or more VFIO setup(s) as command line
-                            permutations; setup(s) are defined as individual
-                            GRUB boot menu entries, where one permutation may be
-                            chosen at Host machine startup.
-                            Note: multiple GPUs on separate IOMMU groups will
-                            create multiple VFIO setups.
+  -D, --dynamic            Define a temporary VFIO setup as a QEMU command line.
+                           Append to a Libvirt hook or a Guest machine
+                           configuration file. VFIO setup may be
+                           created/destroyed on a Guest startup/shutdown.
 
-  -S, --static              Define a persistent VFIO setup by writing to
-                            various configuration files.
+  -M|--multiple-grub NUMS  Define one or more VFIO setup(s) as command line
+                           permutations; setup(s) are defined as individual
+                           GRUB boot menu entries, where one permutation may be
+                           chosen at Host machine startup.
+                           Note: multiple GPUs on separate IOMMU groups will
+                           create multiple permutations.
 
-  -G|-S --cmdline=TEXT      Define the GRUB command line.
-                            Note: avoid escape characters (") and/or VFIO
-                            commands so as to prevent problems.
-                            TEXT is whitespace delimited text.
+                           NUMS is a comma delimited list of positive numbers
+                           representing selected kernel(s); multiply the
+                           permutations by the number of available kernel(s) to
+                           use (sorted newest to oldest).
+                           Note: to use all available, input '0'.
 
-  -G|-S --kernels=NUMS      Multiply the permutations by the number of
-                            available kernel(s) to use (sorted newest to
-                            oldest).
-                            Note: to use all available, leave blank.
-                            NUMS is a comma delimited list of positive non-zero
-                            numbers.
+  -S|--static OPT          Define a persistent VFIO setup.
+                           OPT is an option.
 
-  --allow-unsafe            Override safety limits. Override a maximum amount of
-                            permutations, and/or features which may repeat a
-                            given command many times.
-                            Note: safety limits are five (5) units each.
+  --static grub            Write to GRUB.
+  --static conf            Write various configuration files.
 
-  Note: the following options may be avoided to allow a given VFIO setup to
-  determine which devices to use or not.
+  Additional arguments:
 
-  -g, --groups=GROUPS       Specify which IOMMU groups may be reserved for any
+  --allow-unsafe       Override safety limits. Override a maximum amount of
+                       permutations, and/or features which may repeat a given
+                       command many times.
+                       Note: safety limits are five (5) units each.
+                       Note: no prompt at execution.
+
+
+  --grub-cmdline TEXT  Define the GRUB command line.
+                       Note: avoid escape characters (") and/or VFIO
+                       commands so as to prevent conflicts.
+
+                       TEXT is whitespace delimited text.
+
+  Guest-machine-reserved devices to match:
+
+  -g|--iommu-groups GROUPS  Specify which IOMMU groups may be reserved for any
                             Guest machine.
+
                             GROUPS is a comma delimited list of text.
 
-  -d, --drivers=DRIVERS     Specify which devices' drivers to override with the
+  -d|--drivers DRIVERS      Specify which devices' drivers to override with the
                             "vfio-pci" driver.
+
                             DRIVERS is a comma delimited list of text.
 
-  -h, --ids=HWIDS           Specify which devices' IDs to blacklist.
+  -v|--vfio-pci-ids HWIDS   Specify which devices' IDs to blacklist.
+
                             HWIDS is a comma delimited list of text.
 
-  --pci-stub-ids=HWIDS      Specify which devices' IDs to blacklist and drivers
+  -p|--pci-stub-ids HWIDS   Specify which devices' IDs to blacklist and drivers
                             to override with the "pci-stub" driver.
+
                             HWIDS is a comma delimited list of text.
 
-  --exclude--groups=GROUPS    Specify which IOMMU groups may be reserved for
-                              the Host machine, if not defined within
-                              "--groups".
-                              GROUPS is a comma delimited list of positive
-                              numbers.
+  Host-machine-reserved devices to match:
 
-  --exclude-drivers=DRIVERS   Specify which devices' drivers to not override
-                              with a VFIO driver, if not defined within
-                              "--drivers".
-                              DRIVERS is a comma delimited list of text.
+  --exclude-drivers DRIVERS       Specify which devices' drivers to not override
+                                  with a VFIO driver, if not defined within
+                                  "--drivers".
 
-  --exclude-ids=HWIDS         Specify which devices' IDs to whitelist, if not
-                              defined within "--ids" or "--pci-stub-ids".
-                              HWIDS is a comma delimited list of text.
+                                  DRIVERS is a comma delimited list of text.
+
+  --exclude--iommu-groups GROUPS  Specify which IOMMU groups may be reserved for
+                                  the Host machine, if not defined within
+                                  "--groups".
+
+                                  GROUPS is a comma delimited list of positive
+                                  numbers.
+
+
+  --exclude-hardware-ids HWIDS    Specify which devices' IDs to whitelist, if not
+                                  defined within "--ids" or "--pci-stub-ids".
+
+                                  HWIDS is a comma delimited list of text.
 ```
 
 #### TODO:
