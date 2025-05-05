@@ -181,9 +181,6 @@ sudo bash installer.sh
   - Setup(s) are defined as individual GRUB boot menu entries, where one
   permutation may be chosen at Host machine startup.
 
-  ```math
-  This expression uses `\$` to display a dollar sign: $`\sqrt{\$4}`$
-  ```
 
   - Modifies the following files:
     - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
