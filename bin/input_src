@@ -1,21 +1,12 @@
 #!/bin/false
 
 #
+# Project:        vfio-script
 # Filename:       input_src
 # Description:    Argument logic.
 # Author(s):      Alex Portell <github.com/portellam>
 # Maintainer(s):  Alex Portell <github.com/portellam>
 # Version:        0.0.1
-#
-
-#
-# TODO:
-# - [ ] parse number ranges in inputs.
-# - [ ] make arguments exclusive.
-#   - This makes project similar to 'grep' command and other Bash commands.
-#   - and easier to develop.
-#   - A user may just run command more than once.
-# - [x] make options inclusive.
 #
 
 #region Sources (1/2)
@@ -34,15 +25,6 @@ source \
 
 shopt -s nullglob   # aid with argument inputs.
 
-MINIMUM_PCI_STUB_HARDWARE_ID_DELIM=""
-MINIMUM_VFIO_PCI_DRIVER_DELIM=""
-MINIMUM_VFIO_PCI_HARDWARE_ID_DELIM=""
-
-VARIOUS_PCI_STUB_HARDWARE_ID_LIST=()
-VARIOUS_VFIO_PCI_DRIVER_DELIM_LIST=()
-VARIOUS_VFIO_PCI_HARDWARE_ID_LIST=()
-
-
 if ! is_string "${2}"; then
   exit 1
 fi
@@ -57,54 +39,48 @@ declare -g SCRIPT_VERSION="${3}"
 declare -gi COLUMN_SIZE="$( tput cols )"
 declare -gi MIN_IOMMU_GROUP_ID=0
 
-declare -g ETC_PATH="/usr/local/etc/"
-
-declare -g ARGUMENT_MATCH_GROUP="-g"
 declare -g OPTION_ALL="all"
 
 declare -ga INPUT_LIST=()
 
 declare -gA INPUT_DICT=(
-  ["MATCH_GROUP"]=false
-  ["MATCH_GROUP_LIST"]=""
-  ["MATCH_HOST"]=false
-  ["MATCH_MAKE"]=false
-  ["MATCH_MAKE_LIST"]=""
-  ["MATCH_NAME"]=false
-  ["MATCH_NAME_LIST"]=""
-  ["MATCH_TYPE"]=false
-  ["MATCH_TYPE_LIST"]=""
-  ["MATCH_VIDEO"]=false
-  ["MATCH_VIDEO_LIST"]=""
-  ["UNMATCH_GROUP"]=false
-  ["UNMATCH_GROUP_LIST"]=""
-  ["UNMATCH_HOST"]=false
-  ["UNMATCH_MAKE"]=false
-  ["UNMATCH_MAKE_LIST"]=""
-  ["UNMATCH_NAME"]=false
-  ["UNMATCH_NAME_LIST"]=""
-  ["UNMATCH_TYPE"]=false
-  ["UNMATCH_TYPE_LIST"]=""
-  ["UNMATCH_VIDEO"]=""
-  ["UNMATCH_VIDEO_LIST"]=""
-  ["VERBOSE_DOUBLE"]=false
+  ["ALLOW_UNSAFE"]=false
+  ["DYNAMIC_SETUP"]=false
+  ["MATCH_CMDLINE"]=false
+  ["MATCH_CMDLINE_DELIM"]=""
+  ["MATCH_DRIVER"]=false
+  ["MATCH_DRIVER_DELIM"]=""
+  ["MATCH_IOMMU_GROUP"]=false
+  ["MATCH_IOMMU_GROUP_DELIM"]=""
+  ["MATCH_PCI_STUB_HARDWARE_ID"]=false
+  ["MATCH_PCI_STUB_HARDWARE_ID_DELIM"]=""
+  ["MATCH_VFIO_PCI_HARDWARE_ID"]=false
+  ["MATCH_VFIO_PCI_HARDWARE_ID_DELIM"]=""
+  ["MULTIPLE_GRUB_SETUP"]=false
+  ["MULTIPLE_GRUB_SETUP_PERMUTATIONS"]=""
+  ["UNMATCH_DRIVER"]=false
+  ["UNMATCH_DRIVER_DELIM"]=""
+  ["UNMATCH_HARDWARE_ID"]=false
+  ["UNMATCH_HARDWARE_ID_DELIM"]=""
+  ["UNMATCH_IOMMU_GROUP"]=false
+  ["UNMATCH_IOMMU_GROUP_DELIM"]=""
+  ["STATIC_SETUP"]=false
+  ["STATIC_SETUP_OPTION"]=""
   ["VERBOSE"]=false
-  ["XML_FILE"]="${ETC_PATH}${SCRIPT_NAME}${XML_EXTENSION}"
-  ["XML_READ"]=false
-  ["XML_WRITE"]=false
 )
 
 declare -gA INPUT_LIST_DICT=(
-  ["MATCH_GROUP"]="MATCH_GROUP_LIST"
-  ["MATCH_MAKE"]="MATCH_MAKE_LIST"
-  ["MATCH_NAME"]="MATCH_NAME_LIST"
-  ["MATCH_TYPE"]="MATCH_TYPE_LIST"
-  ["MATCH_VIDEO"]="MATCH_VIDEO_LIST"
+  ["MATCH_CMDLINE"]="MATCH_CMDLINE_DELIM"
+  ["MATCH_DRIVER"]="MATCH_DRIVER_DELIM"
+  ["MATCH_IOMMU_GROUP"]="MATCH_IOMMU_GROUP_DELIM"
+  ["MATCH_PCI_STUB_HARDWARE_ID"]="MATCH_PCI_STUB_HARDWARE_ID_DELIM"
+  ["MATCH_VFIO_PCI_HARDWARE_ID"]="MATCH_VFIO_PCI_HARDWARE_ID_DELIM"
+  ["MULTIPLE_GRUB_SETUP"]="MULTIPLE_GRUB_SETUP_PERMUTATIONS"
   ["UNMATCH_GROUP"]="UNMATCH_GROUP_LIST"
-  ["UNMATCH_MAKE"]="UNMATCH_MAKE_LIST"
-  ["UNMATCH_NAME"]="UNMATCH_MAKE_LIST"
-  ["UNMATCH_TYPE"]="UNMATCH_TYPE_LIST"
-  ["UNMATCH_VIDEO"]="UNMATCH_VIDEO_LIST"
+  ["UNMATCH_DRIVER"]="UNMATCH_DRIVER_DELIM"
+  ["UNMATCH_HARDWARE_ID"]="UNMATCH_HARDWARE_ID_DELIM"
+  ["UNMATCH_IOMMU_GROUP"]="UNMATCH_IOMMU_GROUP_DELIM"
+  ["STATIC_SETUP"]="STATIC_SETUP_OPTION"
 )
 
 #endregion
