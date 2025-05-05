@@ -192,7 +192,9 @@ math:
   '\mref': '\mathbf{m}_\text{ref}'
 ---
 
+```math
 The residual is the predicted data for the model, $\dpred{m}$, minus the observed data, $\dobs$. You can also calculate the predicted data for the reference model $\dpred{\mref}$.
+```
 
   - Modifies the following files:
     - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
