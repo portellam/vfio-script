@@ -7,6 +7,11 @@
 # Version:        1.0.0
 #
 
+# TODO:
+#
+# [ ] sanitize delimited lists (remove leading/trailing delimiters)!
+#
+
 #region Logic
 
 #
