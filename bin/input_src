@@ -581,6 +581,9 @@ source \
       "${COLUMN_SIZE}" \
       "Show all output."
 
+    #region VFIO setups
+
+    echo -e "VFIO setups:\n"
     echo -en "  -D, --dynamic            "
 
     wrap_text \
@@ -611,9 +614,7 @@ source \
       "${COLUMN_SIZE}" \
       "NUMS is a comma delimited list of positive numbers representing selected kernel(s); multiply the  permutations by the number of available kernel(s) to  use (sorted newest to oldest). Note: to use all available, input '0'."
 
-    #TODO: work here!
-
-    echo -en "  -G, --graphics=INDEX      "
+    echo -en "  -S|--static OPT          "
 
     wrap_text \
       false \
@@ -621,9 +622,7 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "Match all IOMMU groups without a graphics device," \
-      "and any IOMMU group (with a graphics device) whose INDEX matches the" \
-      "expected INDEX value(s). INDEX is not an IOMMU group ID;"
+      "Define a persistent VFIO setup."
 
     echo -en "$( get_repeated_space 28 )"
 
@@ -633,9 +632,7 @@ source \
       true \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "INDEX is a comma delimited list of postive non-zero numbers."
-
-    echo -en "  -H, --host                "
+      "OPT is an option."
 
     wrap_text \
       false \
@@ -643,9 +640,9 @@ source \
       true \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "Match IOMMU groups with at least one (1) or more Host devices."
+      "Show all output."
 
-    echo -en "  -n, --name=NAME           "
+    echo -en "  --static grub            "
 
     wrap_text \
       false \
@@ -653,7 +650,42 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "Match IOMMU group(s) with device name;"
+      "Write to GRUB."
+
+    echo -en "  --static conf            "
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Write various configuration files."
+
+    #endregion
+
+    #region Additional arguments
+
+    echo -e "Additional arguments:\n"
+    echo -en "--allow-unsafe       "
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Override safety limits. Override a maximum amount of permutations, and/or features which may repeat a given command many times. Note: safety limits are five (5) units each. Note: no prompt at execution."
+
+    echo -en "  --grub-cmdline TEXT  "
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "Define the GRUB command line. Note: avoid escape characters, such as double-quote (\") and/or VFIO commands so as to prevent conflicts."
 
     echo -en "$( get_repeated_space 28 )"
 
@@ -663,9 +695,14 @@ source \
       true \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "NAME is a comma delimited list of text."
+      "TEXT is whitespace delimited text."
 
-    echo -en "  --ignore-name=NAME        "
+    #endregion
+
+    #region Guest-machine-reserved devices to match
+
+    echo -e "Guest-machine-reserved devices to match:\n"
+    echo -en "  -g|--iommu-groups GROUPS  "
 
     wrap_text \
       false \
@@ -673,7 +710,7 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "Reverse match IOMMU group(s) with device name;"
+      "Specify which IOMMU groups may be reserved for any Guest machine."
 
     echo -en "$( get_repeated_space 28 )"
 
@@ -683,9 +720,9 @@ source \
       true \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "NAME is a comma delimited list of text."
+      "GROUPS is a comma delimited list of text."
 
-    echo -en "  -t, --type=TYPE           "
+    echo -en "  -d|--drivers DRIVERS      "
 
     wrap_text \
       false \
@@ -693,7 +730,7 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "Match IOMMU group(s) with device type;"
+      "Specify which devices' drivers to override with the \"vfio-pci\" driver."
 
     echo -en "$( get_repeated_space 28 )"
 
@@ -703,9 +740,9 @@ source \
       true \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "TYPE is a comma delimited list of text."
+      "DRIVERS is a comma delimited list of text."
 
-    echo -en "  --ignore-type=TYPE        "
+    echo -en "  -v|--vfio-pci-ids HWIDS   "
 
     wrap_text \
       false \
@@ -713,7 +750,7 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "Reverse match IOMMU group(s) with device type;"
+      "Specify which devices' IDs to blacklist."
 
     echo -en "$( get_repeated_space 28 )"
 
@@ -723,9 +760,9 @@ source \
       true \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "TYPE is a comma delimited list of text."
+      "HWIDS is a comma delimited list of text."
 
-    echo -en "  -V, --vendor=VENDOR       "
+    echo -en "  -p|--pci-stub-ids HWIDS   "
 
     wrap_text \
       false \
@@ -733,7 +770,7 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "Match IOMMU group(s) with device vendor;"
+      "Specify which devices' IDs to blacklist and drivers to override with the \"pci-stub\" driver."
 
     echo -en "$( get_repeated_space 28 )"
 
@@ -743,9 +780,14 @@ source \
       true \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "VENDOR is a comma delimited list of text."
+      "HWIDS is a comma delimited list of text."
 
-    echo -en "  --ignore-vendor=VENDOR    "
+    #endregion
+
+    #region Host-machine-reserved devices to match
+
+    echo -e "Host-machine-reserved devices to match:\n"
+    echo -en "ARGUMENT WHITESPACE OPTION"
 
     wrap_text \
       false \
@@ -753,11 +795,65 @@ source \
       false \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "Reverse match IOMMU group(s) with device vendor;"
+      "DESC"
 
     echo -en "$( get_repeated_space 28 )"
-    echo  # TODO: remove this line when XML support is complete.
-    echo -e "Examples:"
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "OPT DESC"
+
+    echo -en "ARGUMENT WHITESPACE OPTION"
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "DESC"
+
+    echo -en "$( get_repeated_space 28 )"
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "OPT DESC"
+
+    echo -en "ARGUMENT WHITESPACE OPTION"
+
+    wrap_text \
+      false \
+      false \
+      false \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "DESC"
+
+    echo -en "$( get_repeated_space 28 )"
+
+    wrap_text \
+      false \
+      false \
+      true \
+      "${column_prefix_count}" \
+      "${COLUMN_SIZE}" \
+      "OPT DESC"
+
+    #endregion
+
+    return 0
+
+    #region Examples
+
+    echo -e "Examples:\n"
     echo -en "  ${SCRIPT_NAME} " # do wrap_text for args here.
 
     column_prefix_count=$(( "${#SCRIPT_NAME}" + 3 ))
@@ -811,6 +907,8 @@ source \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
       "${text}"
+
+    #endregion
   }
 
   function trim_input_lists
