@@ -37,8 +37,20 @@ source \
 
 DELIM=","
 EXECUTABLE="parse-iommu-devices"
-DRIVER_DELIM_REGEX='^([a-zA-Z_-]+)(,[a-zA-Z_-]+)*$'
-HARDWARE_ID_DELIM_REGEX='^([a-zA-Z0-9]{4}:[a-zA-Z0-9]{4})(,[a-zA-Z0-9]{4}:[a-zA-Z0-9]{4})*$'
+
+# Regex for a comma delimited list of items (alphabet, hyphens,
+# underscores) with optional leading and/or optional trailing commas.
+DRIVER_DELIM_REGEX='^,*([a-zA-Z0-9_-]+)(,[a-zA-Z0-9_-]+)*,*$'
+
+# Regex for a comma delimited list of items (colon delimited list of two
+# items with four alphanumeric characters), with optional leading and/or
+# optional trailing commas.
+HARDWARE_ID_DELIM_REGEX='^(\s*,\s*|\s*([A-Za-z0-9]{4}:\s*[A-Za-z0-9]{4})\s*,\s*)*$'
+
+# Regex for a comma delimited list of positive integers (including zero), with
+# optional leading and/or optional trailing commas.
+IOMMU_GROUP_DELIM_REGEX='^,*([0-9]+)(,[0-9]+)*,*$'
+
 VFIO_PCI_DRIVER="vfio-pci"
 
 CMDLINE_DEFAULTS="quiet splash"
@@ -73,8 +85,16 @@ function grub_vfio_src_main
 {
   local cmdline_prefix="${1}"
 
-  if ! [[ "${cmdline_prefix}" =~ "${DRIVER_DELIM_REGEX}" ]] \
-    && ! [[ "${cmdline_prefix}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
+  if is_string "${cmdline_prefix}" \
+    && has_unmatch \
+      "cmdline_prefix" \
+      "${DRIVER_DELIM_REGEX}" \
+    && has_unmatch \
+      "cmdline_prefix" \
+      "${HARDWARE_ID_DELIM_REGEX}" \
+    && has_unmatch \
+      "cmdline_prefix" \
+      "${IOMMU_GROUP_DELIM_REGEX}"; then
     cmdline_prefix="${cmdline_prefix//\"/}"
     shift
 
@@ -82,12 +102,42 @@ function grub_vfio_src_main
     cmdline_prefix=""
   fi
 
+  local excluded_iommu_group_delim="${1}"
+
+  if is_string "${excluded_iommu_group_delim}" \
+    && ! has_match \
+      "excluded_iommu_group_delim" \
+      "${IOMMU_GROUP_DELIM_REGEX}"; then
+    return 2
+  fi
+
+  local excluded_driver_group_delim="${2}"
+
+  if is_string "${excluded_driver_group_delim}" \
+    && ! has_match \
+      "excluded_driver_group_delim" \
+      "${DRIVER_DELIM_REGEX}"; then
+    return 2
+  fi
+
+  local excluded_hardware_id_delim="${3}"
+
+  if is_string "${excluded_hardware_id_delim}" \
+    && ! has_match \
+      "excluded_hardware_id_delim" \
+      "${HARDWARE_ID_DELIM_REGEX}"; then
+    return 2
+  fi
+
   if ! grub_vfio_src_get_kernel_cmdline_iommu_driver; then
     return 1
   fi
 
-  if ! grub_vfio_src_write_grub \
+  local destination_path="/etc/grub.d/40_custom"
+
+  if ! grub_vfio_src_write_most_grub \
       "${cmdline_prefix}" \
+      "${destination_path}" \
     || ! grub_vfio_src_update_grub; then
     print_fail_to_log "Failed to install a GRUB VFIO setup."
     return 1
@@ -126,6 +176,12 @@ function grub_vfio_src_get_kernel_cmdline_iommu_driver
   esac
 }
 
+# IMPLEMENT
+#
+# $1: the comma delimited list of IOMMU groups to exclude.
+# $2: the comma delimited list of device drivers to exclude.
+# $3: the comma delimited list of hardware IDs to exclude.
+#
 function grub_vfio_src_get_non_video_delims
 {
   local video_iommu_group_delim=$( \
@@ -147,6 +203,12 @@ function grub_vfio_src_get_non_video_delims
   NOVIDEO_DRIVER_DELIM+="${output[1]}"
 }
 
+# IMPLEMENT
+#
+# $1: the comma delimited list of IOMMU groups to exclude.
+# $2: the comma delimited list of device drivers to exclude.
+# $3: the comma delimited list of hardware IDs to exclude.
+#
 function grub_vfio_src_get_video_delim_lists
 {
   local -i index=1
@@ -191,28 +253,43 @@ function grub_vfio_src_update_grub
 }
 
 function grub_vfio_src_set_grub_entries
-  {
-    if ! sed \
-      -i \
-      "s/+'/-'/g" \
-      "${GRUB_CUSTOM_DEST_PATH}" \
-      &> /dev/null; then
-      print_error_to_log "Failed to enable entries for GRUB proxy file."
-      return 1
-    fi
-  }
+{
+  if ! is_string "${1}"; then
+    return 2
+  fi
 
-  function grub_vfio_src_unset_grub_entries
-  {
-    if ! sed \
-      -i \
-      "s/+'/-'/g" \
-      "${GRUB_CUSTOM_DEST_PATH}" \
-      &> /dev/null; then
-      print_error_to_log "Failed to disable entries for GRUB proxy file."
-      return 1
-    fi
-  }
+  local destination_path="${1}"
+
+  if ! sed \
+    -i \
+    "s/+'/-'/g" \
+    "${destination_path}" \
+    &> /dev/null; then
+    print_error_to_log "Failed to enable entries for GRUB proxy file."
+    return 1
+  fi
+}
+
+#
+# $1: the destination path.
+#
+function grub_vfio_src_unset_grub_entries
+{
+  if ! is_string "${1}"; then
+    return 2
+  fi
+
+  local destination_path="${1}"
+
+  if ! sed \
+    -i \
+    "s/+'/-'/g" \
+    "${destination_path}" \
+    &> /dev/null; then
+    print_error_to_log "Failed to disable entries for GRUB proxy file."
+    return 1
+  fi
+}
 
 function grub_vfio_src_verify_dependencies
 {
@@ -227,10 +304,11 @@ function grub_vfio_src_verify_dependencies
 
 #
 # $1: the whitespace delimited string of command lines.
-# $2: the max number of kernels.
-# $3: the default boot video device group index.
+# $2: the destination path.
+# $3: the max number of kernels.
+# $4: the default boot video device group index.
 #
-function static_vfio_src_write_most_grub
+function grub_vfio_src_write_most_grub
 {
   local cmdline_prefix="${1}"
 
@@ -242,26 +320,33 @@ function static_vfio_src_write_most_grub
     cmdline_prefix=""
   fi
 
+  if ! is_string "${1}" \
+    || ! is_string "${2}" \
+    || ! is_string "${3}"; then
+    return 2
+  fi
+
+  local destination_path="${1}"
   local -a max_parsed_kernels="${SAFE_MAX}"
 
   if "${ALLOW_UNSAFE}"; then
-    max_parsed_kernels="${1}"
+    max_parsed_kernels="${2}"
   fi
 
   if ! "${ALLOW_UNSAFE}" \
-    && [[ "${1}" -le "${SAFE_MAX}" ]]; then
-    max_parsed_kernels="${1}"
+    && [[ "${2}" -le "${SAFE_MAX}" ]]; then
+    max_parsed_kernels="${2}"
   fi
 
   local -i default_index=0
 
   if "${ALLOW_UNSAFE}"; then
-    default_index="${2}"
+    default_index="${3}"
   fi
 
   if ! "${ALLOW_UNSAFE}" \
-    && [[ "${2}" -le "${SAFE_MAX}" ]]; then
-    default_index="${2}"
+    && [[ "${3}" -le "${SAFE_MAX}" ]]; then
+    default_index="${3}"
   fi
 
   local match="/boot/vmli*"
@@ -348,7 +433,7 @@ function static_vfio_src_write_most_grub
       hardware_id_delim="${NOVIDEO_HARDWARE_ID_DELIM}${DELIM}"
       hardware_id_delim+="${VIDEO_GROUP_HARDWARE_ID_DELIM_LIST[${index}]}"
 
-      static_vfio_src_write_this_grub \
+      grub_vfio_src_write_this_grub \
         "output_list" \
         "title_list" \
         "${cmdline_prefix}" \
@@ -371,7 +456,6 @@ function static_vfio_src_write_most_grub
     done
   done
 
-  local destination_path="/etc/grub.d/40_custom"
   local destination_dir=$( dirname "${destination_path}" )
 
   if [[ ! -d "${destination_dir}" ]] \
@@ -383,6 +467,8 @@ function static_vfio_src_write_most_grub
     return 1
   fi
 
+  local error="Failed to overwrite GRUB proxy file."
+
   if ! sed \
       -i \
       '/'"${line_to_match}"'/c\'"${line_grub_default}" \
@@ -391,7 +477,7 @@ function static_vfio_src_write_most_grub
       -e \
       "\n${output_list[*]}" \
       >> "${destination_path}" ; then
-    print_error_to_log "Failed to overwrite '${destination_path}'."
+    print_error_to_log "${error}"
     return 1
   fi
 
@@ -409,7 +495,7 @@ function static_vfio_src_write_most_grub
       -i \
       '/'"${line_to_match}"'/c\'"${line_grub_default}" \
       "${destination_path}"; then
-    print_error_to_log "Failed to overwrite '${destination_path}'."
+    print_error_to_log "${error}"
     return 1
   fi
 }
@@ -426,17 +512,17 @@ function static_vfio_src_write_most_grub
 # $9: the comma delimited string of device IDs to use "vfio-pci".
 # $10: the comma delimited string of device IDs to use "pci-stub".
 #
-function static_vfio_src_write_this_grub
+function grub_vfio_src_write_this_grub
 {
-  if [[ "${1}" == "" ]]; then
-    return
+  if ! is_string "${1}"; then
+    return 2
   fi
 
   local -n output_list_ref="${1}"
   shift
 
-  if [[ "${1}" == "" ]]; then
-    return
+  if ! is_string "${1}"; then
+    return 2
   fi
 
   local -n title_list_ref="${1}"
@@ -450,6 +536,15 @@ function static_vfio_src_write_this_grub
 
   else
     cmdline_prefix=""
+  fi
+
+  if ! is_string "${1}" \
+    || ! is_string "${2}" \
+    || ! is_string "${3}" \
+    || ! is_string "${4}" \
+    || ! is_string "${5}" \
+    || ! is_string "${6}"; then
+    return 2
   fi
 
   local iommu_group="${1}"
