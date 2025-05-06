@@ -186,7 +186,7 @@ sudo bash installer.sh
 
       - &ensp;&ensp;**If** \( \text{groups}_{\text{guest video}} = 0 \)
         - **Given** \( \text{groups}_{\text{total guest}} \geq 0 \)
-        - &ensp;&ensp;**Then** \( \text{permutations}_{\text{total}} = \text{kernels}
+        - &ensp;&ensp;**Then** \( \text{permutations}_{\text{total}} = \text{kernels} \)
 
   - Modifies the following files:
     - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
