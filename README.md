@@ -179,14 +179,14 @@ sudo bash installer.sh
   - Define one or more persistent VFIO setup(s) as GRUB command line
   permutations, where one permutation may be chosen at Host machine startup.
   - **Formulae:**
-    - &ensp; \( \text{groups}_{\text{guest video}} = \text{groups}_{\text{total video}} - \text{groups}_{\text{host video}} \)
-      - &ensp; *if* \( \text{groups}_{\text{guest video}} \geq 1 \)
-        - &ensp; *while* \( \text{groups}_{\text{host video}} \geq 1 \)
-        - &ensp; *then* \( \text{permutations}_{\text{total}} = \text{kernels} \times \text{groups}_{\text{guest video}} \)
+    - &ensp; **Given** \( \text{groups}_{\text{guest video}} = \text{groups}_{\text{total video}} - \text{groups}_{\text{host video}} \)
+      - &ensp; **If** \( \text{groups}_{\text{guest video}} \geq 1 \)
+        - &ensp; **Given** \( \text{groups}_{\text{host video}} \geq 1 \)
+        - &ensp; **Then** \( \text{permutations}_{\text{total}} = \text{kernels} \times \text{groups}_{\text{guest video}} \)
 
-      - &ensp; *if* \( \text{groups}_{\text{guest video}} = 0 \)
-        - *while* \( \text{groups}_{\text{total guest}} \geq 0 \)
-        - &ensp; *then* \( \text{permutations}_{\text{total}} = \text{kernels}
+      - &ensp; **If** \( \text{groups}_{\text{guest video}} = 0 \)
+        - **Given** \( \text{groups}_{\text{total guest}} \geq 0 \)
+        - &ensp; **Then** \( \text{permutations}_{\text{total}} = \text{kernels}
 
   - Modifies the following files:
     - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
