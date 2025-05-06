@@ -19,9 +19,9 @@
 
 #region Sources
 
-SOURCE_PATH="${1}"
+declare -g SOURCE_PATH="${1}"
 shift
-COLUMN_SIZE="$( tput cols )"
+declare -g COLUMN_SIZE="$( tput cols )"
 
 source \
   "${SOURCE_PATH}print_src" \
@@ -34,9 +34,9 @@ source \
 
   #region Input Parameters
 
-  SOURCE_ETC_PATH="${1}"
-  USE_GRUB=false
-  ALLOW_UNSAFE=false
+  declare -g SOURCE_ETC_PATH="${1}"
+  declare -g USE_GRUB=false
+  declare -g ALLOW_UNSAFE=false
 
   if [[ "${2}" != "" ]]; then
     USE_GRUB=true
@@ -48,44 +48,44 @@ source \
 
   #endregion
 
-DELIM=","
+declare -g DELIM=","
 
 # Regex for a string which may consist of the alphabet, hyphens, and/or
 # underscores.
-DRIVER_REGEX='^[a-zA-Z0-9_-]+$'
+declare -g DRIVER_REGEX='^[a-zA-Z0-9_-]+$'
 
 # Regex for a comma delimited list of items (alphabet, hyphens,
 # underscores) with optional leading and/or optional trailing commas.
-DRIVER_DELIM_REGEX='^,*([a-zA-Z0-9_-]+)(,[a-zA-Z0-9_-]+)*,*$'
+declare -g DRIVER_DELIM_REGEX='^,*([a-zA-Z0-9_-]+)(,[a-zA-Z0-9_-]+)*,*$'
 
 # Regex for a string which may consist of a colon delimited list of two items,
 # where the items may consist of four digits of alphanumeric characters.
-HARDWARE_ID_REGEX='^[a-zA-Z0-9]{4}:[a-zA-Z0-9]{4}$'
+declare -g HARDWARE_ID_REGEX='^[a-zA-Z0-9]{4}:[a-zA-Z0-9]{4}$'
 
 # Regex for a comma delimited list of items (colon delimited list of two
 # items with four alphanumeric characters), with optional leading and/or
 # optional trailing commas.
-HARDWARE_ID_DELIM_REGEX='^(\s*,\s*|\s*([A-Za-z0-9]{4}:\s*[A-Za-z0-9]{4})\s*,\s*)*$'
+declare -g HARDWARE_ID_DELIM_REGEX='^(\s*,\s*|\s*([A-Za-z0-9]{4}:\s*[A-Za-z0-9]{4})\s*,\s*)*$'
 
 # Regex for a string which may consist of positive integers (including zero),
 # of any size.
-IOMMU_GROUP_ID_REGEX='^[0-9]+$'
+declare -g IOMMU_GROUP_ID_REGEX='^[0-9]+$'
 
 # Regex for a comma delimited list of positive integers (including zero), with
 # optional leading and/or optional trailing commas.
-IOMMU_GROUP_DELIM_REGEX='^,*([0-9]+)(,[0-9]+)*,*$'
+declare -g IOMMU_GROUP_DELIM_REGEX='^,*([0-9]+)(,[0-9]+)*,*$'
 
-VFIO_PCI_DRIVER="vfio-pci"
+declare -g VFIO_PCI_DRIVER="vfio-pci"
 
-CMDLINE_DEFAULTS="quiet splash"
-CMDLINE_EARLY_LOAD_MODULES="rd.driver.pre=${VFIO_PCI_DRIVER}"
-CMDLINE_EARLY_LOAD_MODULES+="rd.modules-load=${VFIO_PCI_DRIVER}"
-CMDLINE_FOR_WINDOWS10="kvm.ignore_msrs=1"
-CMDLINE_POWER_MANAGEMENT="acpi=force apm=power_off pcie_aspm=off"
-CMDLINE_PRIVACY="rfkill.default_state=1 systemd.restore_state=0"
-CMDLINE_UNSET_FRAMEBUFFER="video=efifb:off,vesafb:off"
+declare -g CMDLINE_DEFAULTS="quiet splash"
+declare -g CMDLINE_EARLY_LOAD_MODULES="rd.driver.pre=${VFIO_PCI_DRIVER}"
+declare -g CMDLINE_EARLY_LOAD_MODULES+="rd.modules-load=${VFIO_PCI_DRIVER}"
+declare -g CMDLINE_FOR_WINDOWS10="kvm.ignore_msrs=1"
+declare -g CMDLINE_POWER_MANAGEMENT="acpi=force apm=power_off pcie_aspm=off"
+declare -g CMDLINE_PRIVACY="rfkill.default_state=1 systemd.restore_state=0"
+declare -g CMDLINE_UNSET_FRAMEBUFFER="video=efifb:off,vesafb:off"
 
-CMDLINE_PREFIX="${CMDLINE_DEFAULTS} ${CMDLINE_PRIVACY}"
+declare -g CMDLINE_PREFIX="${CMDLINE_DEFAULTS} ${CMDLINE_PRIVACY}"
 CMDLINE_PREFIX+="${CMDLINE_POWER_MANAGEMENT} ${CMDLINE_EARLY_LOAD_MODULES}"
 CMDLINE_PREFIX+="${CMDLINE_UNSET_FRAMEBUFFER} ${CMDLINE_FOR_WINDOWS10}"
 

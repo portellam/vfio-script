@@ -20,13 +20,81 @@ source \
   "${SOURCE_PATH}" \
   "${COLUMN_SIZE}"
 
+source \
+  "${SOURCE_PATH}grub_vfio_src" \
+  "${SOURCE_PATH}" \
+  "${COLUMN_SIZE}"
+
+source \
+  "${SOURCE_PATH}static_vfio_src" \
+  "${SOURCE_PATH}" \
+  "${COLUMN_SIZE}"
+
+#endregion
+
+#region Parameters
+
+declare -g DELIM=","
+declare -g EXECUTABLE="parse-iommu-devices"
+
+# Regex for a comma delimited list of items (alphabet, hyphens,
+# underscores) with optional leading and/or optional trailing commas.
+declare -g DRIVER_DELIM_REGEX='^,*([a-zA-Z0-9_-]+)(,[a-zA-Z0-9_-]+)*,*$'
+
+# Regex for a comma delimited list of items (colon delimited list of two
+# items with four alphanumeric characters), with optional leading and/or
+# optional trailing commas.
+declare -g HARDWARE_ID_DELIM_REGEX='^(\s*,\s*|\s*([A-Za-z0-9]{4}:\s*[A-Za-z0-9]{4})\s*,\s*)*$'
+
+# Regex for a comma delimited list of positive integers (including zero), with
+# optional leading and/or optional trailing commas.
+declare -g IOMMU_GROUP_DELIM_REGEX='^,*([0-9]+)(,[0-9]+)*,*$'
+
 #endregion
 
 #region Logic
 
+#FIXME
+
+
+#
+# $1 : true/false enable verbosity.
+# $2 : true/false skip prompt.
+# $3 : the match to select a VFIO setup.
+# $4 : the comma delimited list of IOMMU groups to exclude.
+#
 function vfio_setup_src_main
 {
-  echo
+  if ! is_boolean "${1}" \
+    || ! is_boolean "${2}" \
+    || ! is_string "${3}" \
+    || ! is_string "${4}"; then
+    return 1
+  fi
+
+  local do_enable_verbosity="${1}"
+  local do_skip_prompt="${2}"
+  local -n iommu_groups_to_exclude_delim_ref_1=""
+
+  if [[ "${3}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
+    local -n iommu_groups_to_exclude_delim_ref_1="${3}"
+  fi
+
+  shift
+  local match="${3}"
+
+  if ! vfio_setup_src_select_groups \
+      "${do_enable_verbosity}" \
+      "${do_skip_prompt}" \
+      "${iommu_groups_to_exclude_delim_ref_1}"
+    || ! is_boolean "${2}" \
+    || ! is_string "${3}" \
+    || ! is_string "${4}"; then
+    return 1
+  fi
+
+  
+  vfio_setup_src_select_many_setup
 }
 
 #
@@ -42,63 +110,155 @@ function vfio_setup_src_select_groups
     return 1
   fi
 
-  do_enable_verbosity="${1}"
-  do_skip_prompt="${2}"
-  iommu_groups_to_exclude_delim="${3}"
+  local do_enable_verbosity="${1}"
+  local do_skip_prompt="${2}"
+  local -n iommu_groups_to_exclude_delim_ref_2="${3}"
+
+  if is_string "${iommu_groups_to_exclude_delim_ref_2}" \
+    && has_unmatch \
+      "iommu_groups_to_exclude_delim_ref_2" \
+      "${IOMMU_GROUP_DELIM_REGEX}"; then
+    print_error_to_log "Invalid IOMMU groups."
+    return 1
+  fi
+
+  if "${do_skip_prompt}"; then
+    return 0
+  fi
+
+  for index in $( seq 0 2 ); do
+    if "${do_enable_verbosity}"; then
+      echo \
+        -en \
+        "Enter a comma-delimited list of IOMMU groups to reserve for the Host" \
+        " machine (to exclude for any Guest machines) (leave blank to skip): "
+
+    else
+      echo \
+        -en \
+        "Enter a comma-delimited list of excluded IOMMU groups: "
+    fi
+
+    read iommu_groups_to_exclude_delim
+
+    if ! is_string "${iommu_groups_to_exclude_delim}" \
+      || has_match \
+        "iommu_groups_to_exclude_delim" \
+        "${IOMMU_GROUP_DELIM_REGEX}"; then
+        if "${do_enable_verbosity}"; then
+          print_output_to_log "Validated IOMMU groups."
+        fi
+
+      return 0
+    fi
+  done
+
+  if "${do_enable_verbosity}"; then
+    print_error_to_log "Invalid IOMMU groups."
+  fi
+
+  return 1
 }
 
 #
 # $1 : true/false enable verbosity.
 # $2 : the match to select a VFIO setup.
 #
-function vfio_setup_src_select_setup
+function vfio_setup_src_select_many_setup
 {
   if ! is_boolean "${1}" \
     || ! is_string "${2}"; then
     return 1
   fi
 
-  enable_verbosity="${1}"
-  match="${2}"
+  local enable_verbosity="${1}"
+  local match="${2}"
+
+  if is_string "${match}"; then
+    if vfio_setup_src_select_this_setup \
+      "${enable_verbosity}" \
+      "${match}"; then
+      return 0
+    fi
+  fi
 
   for index in $( seq 0 2 ); do
-    case "${match,,}" in
-      "dynamic" )
-        if ! dynamic_vfio_src \
-          "${enable_verbosity}"; then
-          return 1
-        fi
+    echo \
+      -en \
+      "Select a VFIO setup [Dynamic|GRUB|Static]:"
 
-        return 0
-        ;;
+    read match
 
-      "grub" )
-        if ! grub_vfio_src \
-          "${enable_verbosity}"; then
-          return 1
-        fi
-
-        return 0
-        ;;
-
-      "static" )
-        if ! static_vfio_src \
-          "${enable_verbosity}"; then
-          return 1
-        fi
-
-        return 0
-        ;;
-
-      * )
-        print_error_to_log "Invalid choice."
-        ;;
-
-    esac
+    if vfio_setup_src_select_this_setup \
+      "${enable_verbosity}" \
+      "${match}"; then
+      return 0
+    fi
   done
 
   print_fail_to_log "Failed to select a VFIO setup."
   return 1
+}
+
+#
+# $1 : true/false enable verbosity.
+# $2 : the match to select a VFIO setup.
+#
+function vfio_setup_src_select_this_setup
+{
+  if ! is_boolean "${1}" \
+    || ! is_string "${2}"; then
+    return 1
+  fi
+
+  local enable_verbosity="${1}"
+  local match="${2}"
+
+  case "${match,,}" in
+    "dynamic" )
+      if ! dynamic_vfio_src \
+        "${enable_verbosity}"; then
+        return 1
+      fi
+
+      return 0
+      ;;
+
+    "grub" )
+      if ! grub_vfio_src \
+        "${enable_verbosity}"; then
+        return 1
+      fi
+
+      return 0
+      ;;
+
+    "static" )
+      if ! static_vfio_src \
+        "${enable_verbosity}"; then
+        return 1
+      fi
+
+      return 0
+      ;;
+
+    * )
+      if "${do_enable_verbosity}"; then
+        print_error_to_log "Invalid selection."
+      fi
+
+      return 2
+      ;;
+
+    "" )
+      if "${do_enable_verbosity}"; then
+        print_output_to_log "Skipped selection."
+      fi
+
+      return 0
+      ;;
+
+  esac
 }
 
 #endregion
