@@ -175,8 +175,7 @@ sudo bash installer.sh
 - **Dynamic**
   - Define a temporary VFIO setup as a QEMU command line.
   - Append to a Libvirt hook or a Guest machine configuration file.
-  - This VFIO setup may be created/destroyed
-  on a Guest startup/shutdown.
+  - This VFIO setup may be created/destroyed on a Guest startup/shutdown.
 
 - **Multiple GRUB**
   - Define one or more persistent VFIO setup(s) as GRUB command line
@@ -199,13 +198,13 @@ sudo bash installer.sh
   - Define a persistent VFIO setup.
 
   - Modifies either of the following files:
-    - GRUB: `/etc/default/grub`
+    - GRUB: `/etc/default/grub`.
 
     - system configuration files:
-      - **overwrites** `/etc/initramfs-tools/modules`
-      - creates `/etc/modprobe.d/pci-blacklists.conf
-      - creates `/etc/modprobe.d/vfio.conf
-      - **overwrites** `/etc/modules`
+      - **overwrites** `/etc/initramfs-tools/modules`.
+      - creates `/etc/modprobe.d/pci-blacklists.conf`.
+      - creates `/etc/modprobe.d/vfio.conf`.
+      - **overwrites** `/etc/modules`.
 
 ### 6. Contact
 Did you encounter a bug? Do you need help? Please visit the [Issues][61] page.
