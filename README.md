@@ -14,6 +14,9 @@ between a dynamic, GRUB, or static setup.
 - [3. Documentation](#3-documentation)
 - [4. Download](#4-download)
 - [5. Usage](#5-usage)
+  - [5.1. Install](#51-install)
+  - [5.2. Executable](#52-executable)
+  - [5.3. VFIO Setups](#53-vfio-setups)
 - [6. Contact](#6-contact)
 - [7. References](#7-references)
 
@@ -168,32 +171,31 @@ sudo bash installer.sh
                                   HWIDS is a comma delimited list of text.
 ```
 
-#### 5.3. Major features
-- Dynamic VFIO setup
+#### 5.3. VFIO setups
+- **Dynamic**
   - Define a temporary VFIO setup as a QEMU command line.
   - Append to a Libvirt hook or a Guest machine configuration file.
   - This VFIO setup may be created/destroyed
   on a Guest startup/shutdown.
 
-- Multiple GRUB VFIO setup
+- **Multiple GRUB**
   - Define one or more persistent VFIO setup(s) as GRUB command line
   permutations, where one permutation may be chosen at Host machine startup.
   - **Formulae:**
-    - &ensp;&ensp; \( \text{permutations}_{\text{total}} = \text{GPUs} \times \text{kernels} \)
+    - &ensp;**Given**&ensp; \( \text{groups}_{\text{guest video}} = \text{groups}_{\text{total video}} - \text{groups}_{\text{host video}} \)
+      - &ensp;**If**&ensp; \( \text{groups}_{\text{guest video}} \geq 1 \)
+        - &ensp;**Given**&ensp; \( \text{groups}_{\text{host video}} \geq 1 \)
+        - &ensp;**Then**&ensp; \( \text{permutations}_{\text{total}} = \text{kernels} \times \text{groups}_{\text{guest video}} \)
 
-    - &ensp; \( \text{permutations}_{\text{total}} = \text{kernels} \times \text{IOMMU Groups}_{\text{WITH VIDEO FOR VFIO}} \)
-
-    - &ensp; \( \text{IOMMU Groups}_{\text{WITH VIDEO FOR VFIO}} = \text{IOMMU Groups}_{\text{TOTAL WITH VIDEO}} - \text{IOMMU Groups}_{\text{WITH VIDEO FOR HOST}} \)
-
-    - &ensp; \( \text{IOMMU Groups}_{\text{WITH VIDEO FOR HOST}} \geq 1 \)
-
-    - &ensp; \( \text{IOMMU Groups}_{\text{WITH VIDEO FOR VFIO}} \geq 0 \)
+      - &ensp;**If**&ensp; \( \text{groups}_{\text{guest video}} = 0 \)
+        - **Given**&ensp; \( \text{groups}_{\text{total guest}} \geq 1 \)
+        - &ensp;**Then**&ensp; \( \text{permutations}_{\text{total}} = \text{kernels} \)
 
   - Modifies the following files:
     - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
     - **overwrites** `/etc/default/grub` to define the default boot menu entry.
 
-- Static VFIO setup
+- **Static**
   - Define a persistent VFIO setup.
 
   - Modifies either of the following files:
@@ -204,32 +206,6 @@ sudo bash installer.sh
       - creates `/etc/modprobe.d/pci-blacklists.conf
       - creates `/etc/modprobe.d/vfio.conf
       - **overwrites** `/etc/modules`
-
-#### TODO:
-- [ ] sanitize inputs.
-- [ ] add logic to undo changes for other setups, if a given one is chosen.
-  - in other words, prior to install of a given setup, uninstall the rest.
-
-- [ ] `parse-iommu-devices`: add XML support!
-  - in the mean time, warn the user if a VFIO setup is detected, and quit.
-  - allow for override.
-
-- [ ] add exclusion arguments (drivers, hardware IDs, to ignore).
-- [ ] add logic to define a safe maximum (and arguments to override) for the following:
-  - number of linux kernels to use for GRUB menu entries (example: five kernels)
-  - number of multiple VFIO setups for GRUB (ex: five IOMMU groups with GPUs),
-  should execution of either `lspci` or `parse-iommu-devices` cause slow down.
-- [ ] disclose and utilize `parse-iommu-devices` for all features.
-- [ ] add logic to use `lspci` should `parse-iommu-devices` not be present.
-- [ ] disclose that for a dynamic setup, the output is partial. It is up to the
-user use this output to define guest machine QEMU command lines.
-- [ ] avoid global parameters and pass standard input to functions as input
-parameters.
-- [ ] enable/disable features given arguments
-  - defined preferred drivers/hardware IDs will disable GRUB setup.
-- [ ] warn user if a setup leaves fewer than one GPU for the Host machine.
-
-
 
 ### 6. Contact
 Did you encounter a bug? Do you need help? Please visit the [Issues][61] page.
