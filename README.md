@@ -14,6 +14,9 @@ between a dynamic, GRUB, or static setup.
 - [3. Documentation](#3-documentation)
 - [4. Download](#4-download)
 - [5. Usage](#5-usage)
+  - [5.1. Install](#51-install)
+  - [5.2. Executable](#52-executable)
+  - [5.3. VFIO Setups](#53-vfio-setups)
 - [6. Contact](#6-contact)
 - [7. References](#7-references)
 
@@ -168,14 +171,14 @@ sudo bash installer.sh
                                   HWIDS is a comma delimited list of text.
 ```
 
-#### 5.3. Major features
-- Dynamic VFIO setup
+#### 5.3. VFIO setups
+- **Dynamic**
   - Define a temporary VFIO setup as a QEMU command line.
   - Append to a Libvirt hook or a Guest machine configuration file.
   - This VFIO setup may be created/destroyed
   on a Guest startup/shutdown.
 
-- Multiple GRUB VFIO setup
+- **Multiple GRUB**
   - Define one or more persistent VFIO setup(s) as GRUB command line
   permutations, where one permutation may be chosen at Host machine startup.
   - **Formulae:**
@@ -192,7 +195,7 @@ sudo bash installer.sh
     - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
     - **overwrites** `/etc/default/grub` to define the default boot menu entry.
 
-- Static VFIO setup
+- **Static**
   - Define a persistent VFIO setup.
 
   - Modifies either of the following files:
