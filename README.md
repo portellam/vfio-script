@@ -179,15 +179,13 @@ sudo bash installer.sh
   - Define one or more persistent VFIO setup(s) as GRUB command line
   permutations, where one permutation may be chosen at Host machine startup.
   - **Formulae:**
-    - &ensp;&ensp; \( \text{permutations}_{\text{total}} = \text{GPUs} \times \text{kernels} \)
+    - &ensp; \( \text{permutations}_{\text{total}} = \text{kernels} \times \text{groups}_{\text{guest video}} \)
 
-    - &ensp; \( \text{permutations}_{\text{total}} = \text{kernels} \times \text{IOMMU Groups}_{\text{WITH VIDEO FOR VFIO}} \)
+    - &ensp; \( \text{groups}_{\text{guest video}} = \text{groups}_{\text{total video}} - \text{groups}_{\text{host video}} \)
 
-    - &ensp; \( \text{IOMMU Groups}_{\text{WITH VIDEO FOR VFIO}} = \text{IOMMU Groups}_{\text{TOTAL WITH VIDEO}} - \text{IOMMU Groups}_{\text{WITH VIDEO FOR HOST}} \)
+    - &ensp; \( \text{groups}_{\text{host video}} \geq 1 \)
 
-    - &ensp; \( \text{IOMMU Groups}_{\text{WITH VIDEO FOR HOST}} \geq 1 \)
-
-    - &ensp; \( \text{IOMMU Groups}_{\text{WITH VIDEO FOR VFIO}} \geq 0 \)
+    - &ensp; \( \text{groups}_{\text{guest video}} \geq 0 \)
 
   - Modifies the following files:
     - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
