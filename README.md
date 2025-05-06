@@ -178,11 +178,14 @@ sudo bash installer.sh
 - Multiple GRUB VFIO setup
   - Define one or more persistent VFIO setup(s) as GRUB command line
   permutations, where one permutation may be chosen at Host machine startup.
-  - **General Formula:**
-  &ensp; \( \text{permutations}_{\text{TOTAL}} = | \text{GPU}_{\text{VFIO}} - \text{GPU}_{\text{HOST}} | \times \text{kernel}_{\text{TOTAL}} \)
-  - **Exception:**
-  &ensp; For desktops and non-headless systems, \( \text{GPU}_{\text{HOST}} \)
-  must be at least **one (1)**.
+  - **Formulae:**
+    - &ensp; \( \text{permutations}_{\text{TOTAL}} = \text{kernel}_{\text{TOTAL}} \times ( \text{IOMMU}_{\text{VFIO_GPU}} ) \)
+
+    - &ensp; \( \text{IOMMU}_{\text{VFIO_GPU}} = \text{IOMMU}_{\text{TOTAL_GPU}} - \text{IOMMU}_{\text{HOST_GPU}} \)
+
+    - &ensp; \( \text{IOMMU}_{\text{HOST_GPU}} \geq 1 \)
+
+    - &ensp; \( \text{IOMMU}_{\text{VFIO_GPU}} \geq 0 \)
 
   - Modifies the following files:
     - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
