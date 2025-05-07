@@ -161,26 +161,6 @@ function get_space_count_from_tabspace_count
 }
 
 #
-# $1 : the comma delimited list as a string.
-#
-function is_comma_delimited_list_of_positive_numbers
-{
-  if echo \
-      "${1}" \
-    | grep \
-      --extended-regexp \
-      --quiet \
-      '^(!\d+(,\d+)*$)([^,]+(,[^,]+)*)?$'; then
-    print_and_log_output "Error: Input is not a comma delimited list of positive"\
-      "numbers."
-
-    return 1
-  fi
-
-  return 0
-}
-
-#
 # $1 : the log text as a string.
 #
 function log

@@ -31,6 +31,13 @@ fi
 declare -g SCRIPT_NAME="${2}"
 declare -g SCRIPT_VERSION="${3}"
 declare -gi COLUMN_SIZE="$( tput cols )"
+
+declare -g DELIMITER=","
+
+declare -g HARDWARE_ID_DELIM_REGEX="^(\s*$DELIMITER\s*|\s*([A-Za-z0-9]{4}:\s*[A-Za-z0-9]{4})\s*$DELIMITER\s*)*$"
+declare -g IOMMU_GROUP_DELIM_REGEX="^([0-9]+)($DELIMITER[0-9]+)*$"
+declare -g WORD_DELIM_REGEX="^[a-zA-Z]+($DELIMITER[a-zA-Z]+)*$"
+
 declare -ga INPUT_LIST=()
 
 declare -gA INPUT_DICT=(
@@ -94,16 +101,14 @@ source \
   {
     if ! is_string "${1}" \
       || ! is_string "${2}"; then
-      print_invalid_option_and_exit \
-       "${2}"
+      print_invalid_option_and_exit "${2}"
     fi
 
     local append_input_dict_list_key=${INPUT_LIST_DICT["${1}"]}
 
     if ! is_string "${append_input_dict_list_key}" \
       || ! is_string "${2}"; then
-      print_invalid_option_and_exit \
-       "${2}"
+      print_invalid_option_and_exit "${2}"
     fi
 
     INPUT_DICT["${append_input_dict_list_key}"]+="${2},"
@@ -114,26 +119,61 @@ source \
   # $1 : the input dictionary key as a string.
   # $2 : the value to append as a string.
   #
-  function append_numbered_input_list
+  function append_input_list
   {
     if ! is_string "${1}" \
       || ! is_string "${2}"; then
-      print_invalid_option_and_exit \
-       "${2}"
+      print_invalid_option_and_exit "${2}"
     fi
 
-    local -i minimum_value=0
-
-    if ! is_comma_delimited_list_of_positive_numbers "${2}" \
-      || (
-        [[ "${2: -2}" == "," ]] \
-        && [[ "${2::-2}" -lt "${minimum_value}" ]] \
-      ) || ! append_input_dict_list \
-          "${1}" \
-          "${2}"; then
-      print_invalid_option_and_exit \
-       "${2}"
+    if ! is_string "${3}"; then
+      print_error_to_log "Missing regex."
     fi
+
+    value_as_delim="$( \
+      remove_unnecessary_delimiters \
+        "${2}" \
+        "${DELIMITER}"
+    )"
+
+    append_input_dict_list \
+      "${1}" \
+      "${value_as_delim}"
+
+    return 0
+  }
+
+  #
+  # $1 : the input dictionary key as a string.
+  # $2 : the value to append as a string.
+  # $3 : the regex to unmatch.
+  #
+  function append_input_list_with_regex
+  {
+    if ! is_string "${1}" \
+      || ! is_string "${2}"; then
+      print_invalid_option_and_exit "${2}"
+    fi
+
+    if ! is_string "${3}"; then
+      print_error_to_log "Missing regex."
+    fi
+
+    value_as_delim="$( \
+      remove_unnecessary_delimiters \
+        "${2}" \
+        "${DELIMITER}"
+    )"
+
+    if ! reference_has_unmatch \
+      "value_as_delim" \
+      "${3}"; then
+      print_invalid_option_and_exit "${2}"
+    fi
+
+    append_input_dict_list \
+      "${1}" \
+      "${value_as_delim}"
 
     return 0
   }
@@ -156,90 +196,6 @@ source \
       return 0
     fi
 
-    return 1
-  }
-
-  #
-  # $1 : do match by keyword or fullword.
-  # $2 : the boolean as a reference.
-  # $2 : the list dictionary key as a string.
-  # $3 : the do match boolean to match dictionary key as a string.
-  # $5 : the do match flag as a boolean.
-  # $6 : the comma delimited list of valid matches as a string.
-  # $@ : the values to match as a list.
-  #
-  function is_matched_keyword
-  {
-    if ! is_boolean "${1}" \
-      || ! is_variable "${2}" \
-      || ! is_string "${3}"; then
-      return 2
-    fi
-
-    local do_match_value_by_keyword="${1}"
-    local -n reference_is_matched="${2}"
-
-    if ! is_boolean "${reference_is_matched}"; then
-      return 2
-    fi
-
-    local do_match_value=false
-    local match_delim=""
-
-    if is_dict "${3}"; then
-      local -n matched_dictionary="${3}"
-
-      if ! is_string "${4}" \
-        || ! is_string "${5}"; then
-        return 2
-      fi
-
-      do_match_value="${matched_dictionary["${4}"]}"
-      match_delim="${matched_dictionary["${5}"]}"
-
-      if ! is_boolean "${do_match_value}" \
-        || ! is_string "${match_delim}"; then
-        return 2
-      fi
-
-      shift
-
-    else
-      if ! is_boolean "${3}" \
-        || ! is_string "${4}"; then
-        return 2
-      fi
-
-      do_match_value="${3}"
-      match_delim="${4}"
-    fi
-
-    shift
-    shift
-    shift
-    shift
-    local value_list="$@"
-
-    for this_match in $( \
-      echo "${match_delim}" \
-        | sed "s/,/ /g"
-    ); do
-
-      if "${do_match_value_by_keyword}" \
-        && [[ "${value_list,,}" =~ "${this_match,,}" ]]; then
-        reference_is_matched=true
-        return 0
-      fi
-
-      if ! "${do_match_value_by_keyword}" \
-        && [[ "${value_list,,}" == "${this_match,,}" ]]; then
-        reference_is_matched=true
-        return 0
-      fi
-
-    done
-
-    reference_is_matched=false
     return 1
   }
 
@@ -284,12 +240,12 @@ source \
 
         "-c" \
           | "--grub-cmdline" \
-          | "--grub-cmdline" )
+          | "--grub-cmdlines" )
           local key="MATCH_CMDLINE"
           this_input_list=( "${key}" )
           shift
 
-          if ! append_numbered_input_list \
+          if ! append_input_list \
               "${key}" \
               "${1}"; then
             return 1
@@ -308,9 +264,10 @@ source \
           this_input_list=( "${key}" )
           shift
 
-          if ! append_numbered_input_list \
+          if ! append_input_list_with_regex \
               "${key}" \
-              "${1}"; then
+              "${1}" \
+              "${WORD_DELIM_REGEX}"; then
             return 1
           fi
           ;;
@@ -323,9 +280,10 @@ source \
           this_input_list=( "${key}" )
           shift
 
-          if ! append_numbered_input_list \
+          if ! append_input_list_with_regex \
               "${key}" \
-              "${1}"; then
+              "${1}" \
+              "${IOMMU_GROUP_DELIM_REGEX}"; then
             return 1
           fi
           ;;
@@ -338,9 +296,10 @@ source \
           this_input_list=( "${key}" )
           shift
 
-          if ! append_numbered_input_list \
+          if ! append_input_list_with_regex \
               "${key}" \
-              "${1}"; then
+              "${1}" \
+              "${HARDWARE_ID_DELIM_REGEX}"; then
             return 1
           fi
           ;;
@@ -353,9 +312,10 @@ source \
           this_input_list=( "${key}" )
           shift
 
-          if ! append_numbered_input_list \
+          if ! append_input_list_with_regex \
               "${key}" \
-              "${1}"; then
+              "${1}" \
+              "${HARDWARE_ID_DELIM_REGEX}"; then
             return 1
           fi
           ;;
@@ -370,9 +330,10 @@ source \
           this_input_list=( "${key}" )
           shift
 
-          if ! append_numbered_input_list \
+          if ! append_input_list_with_regex \
               "${key}" \
-              "${1}"; then
+              "${1}" \
+              "${WORD_DELIM_REGEX}"; then
             return 1
           fi
           ;;
@@ -383,9 +344,10 @@ source \
           this_input_list=( "${key}" )
           shift
 
-          if ! append_numbered_input_list \
+          if ! append_input_list_with_regex \
               "${key}" \
-              "${1}"; then
+              "${1}" \
+              "${HARDWARE_ID_DELIM_REGEX}"; then
             return 1
           fi
           ;;
@@ -396,9 +358,10 @@ source \
           this_input_list=( "${key}" )
           shift
 
-          if ! append_numbered_input_list \
+          if ! append_input_list_with_regex \
               "${key}" \
-              "${1}"; then
+              "${1}" \
+              "${IOMMU_GROUP_DELIM_REGEX}"; then
             return 1
           fi
           ;;
@@ -424,7 +387,7 @@ source \
           this_input_list=( "${key}" )
           shift
 
-          if ! append_numbered_input_list \
+          if ! append_input_list_with_regex \
               "${key}" \
               "${1}"; then
             return 1
@@ -536,9 +499,9 @@ source \
 
   function print_usage
   {
-    # if ! is_verbose; then
-    #   return 0
-    # fi
+    if ! is_verbose; then
+      return 0
+    fi
 
     local -i column_prefix_count=28
 
@@ -550,7 +513,7 @@ source \
       false \
       0 \
       "${COLUMN_SIZE}" \
-      "Easily install, uninstall, or reinstall a VFIO setup on a Linux machine."
+      "Easily and automate the install, uninstall, or reinstall of a hardware-passthrough (VFIO) setup on a Linux machine. Select from either a dynamic, GRUB, or static setup."
 
     wrap_text \
       false \
@@ -912,8 +875,6 @@ source \
 
     #endregion
 
-    return 0
-
     #region Examples
 
     echo -e "Examples:\n"
@@ -927,41 +888,13 @@ source \
       true \
       "${column_prefix_count}" \
       "${COLUMN_SIZE}" \
-      "--graphics 2,3"
+      "--multiple-grub 3"
 
     echo -en "$( get_repeated_space "${column_prefix_count}" )"
 
     column_prefix_count=28
-    text="Include the second and third matched IOMMU groups with graphics device(s). "
-    text+="Standard output includes: comma-delimited lists of selected hardware IDs, "
-    text+="drivers, and IOMMU group IDs."
-
-    wrap_text \
-      false \
-      false \
-      false \
-      "${column_prefix_count}" \
-      "${COLUMN_SIZE}" \
-      "${text}"
-
-    echo
-    echo -en "  ${SCRIPT_NAME} " # do wrap_text for args here.
-
-    wrap_text \
-      false \
-      false \
-      true \
-      "${column_prefix_count}" \
-      "${COLUMN_SIZE}" \
-      "-vv --ignore-name ether --pcie"
-
-    echo -en "$( get_repeated_space "${column_prefix_count}" )"
-
-    column_prefix_count=28
-    text="Match output of IOMMU groups with PCI/e devices, "
-    text+="and exclude any wired ethernet devices. "
-    text+="Verbose output includes: comma-delimited lists of selected hardware IDs, "
-    text+="drivers, and IOMMU group IDs; details of all IOMMU groups; and telemetry."
+    text="Define a multiple of GRUB boot menu entries (as individual"
+    text+="VFIO setups), multiplied by the number of kernels or three (3)."
 
     wrap_text \
       false \
@@ -976,10 +909,34 @@ source \
 
   function trim_input_lists
   {
-    INPUT_DICT["MATCH_GROUP_LIST"]="$( \
+    INPUT_DICT["MATCH_CMDLINE_DELIM"]="$( \
       truncate_index_from_delimited_list \
         -1 \
-        "${INPUT_DICT["MATCH_GROUP_LIST"]}" \
+        "${INPUT_DICT["MATCH_CMDLINE_DELIM"]}" \
+    )"
+
+    INPUT_DICT["MATCH_DRIVER_DELIM"]="$( \
+      truncate_index_from_delimited_list \
+        -1 \
+        "${INPUT_DICT["MATCH_DRIVER_DELIM"]}" \
+    )"
+
+    INPUT_DICT["MATCH_IOMMU_GROUP_DELIM"]="$( \
+      truncate_index_from_delimited_list \
+        -1 \
+        "${INPUT_DICT["MATCH_IOMMU_GROUP_DELIM"]}" \
+    )"
+
+    INPUT_DICT["MATCH_PCI_STUB_HARDWARE_ID_DELIM"]="$( \
+      truncate_index_from_delimited_list \
+        -1 \
+        "${INPUT_DICT["MATCH_PCI_STUB_HARDWARE_ID_DELIM"]}" \
+    )"
+
+    INPUT_DICT["MATCH_VFIO_PCI_HARDWARE_ID_DELIM"]="$( \
+      truncate_index_from_delimited_list \
+        -1 \
+        "${INPUT_DICT["MATCH_VFIO_PCI_HARDWARE_ID_DELIM"]}" \
     )"
 
     INPUT_DICT["UNMATCH_GROUP_LIST"]="$( \
@@ -988,46 +945,22 @@ source \
         "${INPUT_DICT["UNMATCH_GROUP_LIST"]}" \
     )"
 
-    INPUT_DICT["MATCH_MAKE_LIST"]="$( \
+    INPUT_DICT["UNMATCH_DRIVER_DELIM"]="$( \
       truncate_index_from_delimited_list \
         -1 \
-        "${INPUT_DICT["MATCH_MAKE_LIST"]}" \
+        "${INPUT_DICT["UNMATCH_DRIVER_DELIM"]}" \
     )"
 
-    INPUT_DICT["UNMATCH_MAKE_LIST"]="$( \
+    INPUT_DICT["UNMATCH_HARDWARE_ID_DELIM"]="$( \
       truncate_index_from_delimited_list \
         -1 \
-        "${INPUT_DICT["UNMATCH_MAKE_LIST"]}" \
+        "${INPUT_DICT["UNMATCH_HARDWARE_ID_DELIM"]}" \
     )"
 
-    INPUT_DICT["MATCH_NAME_LIST"]="$( \
+    INPUT_DICT["UNMATCH_IOMMU_GROUP_DELIM"]="$( \
       truncate_index_from_delimited_list \
         -1 \
-        "${INPUT_DICT["MATCH_NAME_LIST"]}" \
-    )"
-
-    INPUT_DICT["UNMATCH_NAME_LIST"]="$( \
-      truncate_index_from_delimited_list \
-        -1 \
-        "${INPUT_DICT["UNMATCH_NAME_LIST"]}" \
-    )"
-
-    INPUT_DICT["MATCH_TYPE_LIST"]="$( \
-      truncate_index_from_delimited_list \
-        -1 \
-        "${INPUT_DICT["MATCH_TYPE_LIST"]}" \
-    )"
-
-    INPUT_DICT["UNMATCH_TYPE_LIST"]="$( \
-      truncate_index_from_delimited_list \
-        -1 \
-        "${INPUT_DICT["UNMATCH_TYPE_LIST"]}" \
-    )"
-
-    INPUT_DICT["MATCH_VIDEO_LIST"]="$( \
-      truncate_index_from_delimited_list \
-        -1 \
-        "${INPUT_DICT["MATCH_VIDEO_LIST"]}" \
+        "${INPUT_DICT["UNMATCH_IOMMU_GROUP_DELIM"]}" \
     )"
 
     return 0
