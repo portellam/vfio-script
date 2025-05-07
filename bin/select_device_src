@@ -38,30 +38,21 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
   #
   # $1 : true/false enable verbosity.
   # $2 : true/false skip prompt.
-  # $3 : true/false use "vfio-pci" or "pci-stub".
-  # $4 : the comma delimited list of blacklisted devices' drivers as a reference.
+  # $3 : the comma delimited list of blacklisted devices' drivers as a reference.
   #
   function selection_src_select_blacklisted_drivers
   {
     if ! is_boolean "${1}" \
       || ! is_boolean "${2}" \
-      || ! is_boolean "${3}" \
-      || ! is_reference "${4}"; then
+      || ! is_reference "${3}"; then
       return 2
     fi
 
     local do_enable_verbosity="${1}"
     local do_skip_prompt="${2}"
-    local do_use_vfio_pci="${3}"
-    local -n blacklisted_drivers_ref="${4}"
+    local -n blacklisted_drivers_ref="${3}"
 
-    local placeholder_driver="vfio-pci"
-
-    if ! "${do_use_vfio_pci}"; then
-      placeholder_driver="pci-stub"
-    fi
-
-    local error="Invalid blacklisted devices' drivers (using \"${placeholder_driver}\")."
+    local error="Invalid blacklisted devices' drivers."
     local verbose_error="Please enter a comma-delimited list of devices' drivers."
 
     if is_string "${blacklisted_drivers_ref}" \
@@ -80,9 +71,8 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
       if "${do_enable_verbosity}"; then
         echo \
           -en \
-          "Enter a comma-delimited list of devices' drivers to be blacklisted" \
-          "for the Host machine (to use \"${placeholder_driver}\")" \
-          " (leave blank to skip): "
+          "Enter a comma-delimited list of devices' drivers to blacklist" \
+          " from the Host machine (leave blank to skip): "
 
       else
         echo \
@@ -137,7 +127,7 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
     local do_skip_prompt="${2}"
     local -n whitelisted_drivers_ref="${3}"
 
-    local error="Invalid whitelisted devices' drivers (using \"${placeholder_driver}\")."
+    local error="Invalid whitelisted devices' drivers."
     local verbose_error="Please enter a comma-delimited list of devices' drivers."
 
     if is_string "${whitelisted_drivers_ref}" \
@@ -156,8 +146,8 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
       if "${do_enable_verbosity}"; then
         echo \
           -en \
-          "Enter a comma-delimited list of devices' drivers to be whitelisted" \
-          "for the Host machine (leave blank to skip): "
+          "Enter a comma-delimited list of devices' drivers to reserve for the" \
+          " Host machine (leave blank to skip): "
 
       else
         echo \
@@ -403,8 +393,8 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
         echo \
           -en \
           "Enter a comma-delimited list of devices' IDs"\
-          " (colon-delimited strings of two, with alphanumeric text) to be" \
-          " blacklisted from the Host machine and use the driver" \
+          " (colon-delimited strings of two, with alphanumeric text) to" \
+          " blacklist from the Host machine and use the driver" \
           "\"${placeholder_driver}\" (leave blank to skip): "
 
       else
@@ -481,8 +471,8 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
         echo \
           -en \
           "Enter a comma-delimited list of devices' IDs"\
-          " (colon-delimited strings of two, with alphanumeric text) to be" \
-          " whitelisted from the Host machine (leave blank to skip): "
+          " (colon-delimited strings of two, with alphanumeric text) to" \
+          " reserve for the Host machine (leave blank to skip): "
 
       else
         echo \
