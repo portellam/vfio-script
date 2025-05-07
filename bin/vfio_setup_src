@@ -36,6 +36,7 @@ source \
 
 declare -g DELIM=","
 declare -g EXECUTABLE="parse-iommu-devices"
+declare -g NON_DELIM_REGEX='^[a-zA-Z0-9]+$'
 
 # Regex for a comma delimited list of items (alphabet, hyphens,
 # underscores) with optional leading and/or optional trailing commas.
@@ -56,43 +57,58 @@ declare -g IOMMU_GROUP_DELIM_REGEX='^,*([0-9]+)(,[0-9]+)*,*$'
 
 #FIXME
 
-
 #
 # $1 : true/false enable verbosity.
 # $2 : true/false skip prompt.
-# $3 : the match to select a VFIO setup.
-# $4 : the comma delimited list of IOMMU groups to exclude.
+# $3 : the comma delimited list of IOMMU groups.
+# $4 : the comma delimited list of blacklisted device drivers.
+# $5 : the match to select a VFIO setup.
 #
 function vfio_setup_src_main
 {
   if ! is_boolean "${1}" \
-    || ! is_boolean "${2}" \
-    || ! is_string "${3}" \
-    || ! is_string "${4}"; then
-    return 1
+    || ! is_boolean "${2}"; then
+    return 2
   fi
 
   local do_enable_verbosity="${1}"
   local do_skip_prompt="${2}"
-  local excluded_iommu_group_delim=""
+  local iommu_group_delim="${3}"
 
-  if [[ "${3}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
-    excluded_iommu_group_delim="${3}"
+  if ! is_string "${iommu_group_delim}" \
+    || [[ "${iommu_group_delim}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
+    print_error_to_log "Not a valid comma-delimited list of IOMMU groups."
+    return 2
   fi
 
-  shift
-  local match="${3}"
+  local drivers_delim="${4}"
+
+  if ! is_string "${drivers_delim}" \
+    || [[ "${drivers_delim}" =~ "${DRIVER_DELIM_REGEX}" ]]; then
+    print_error_to_log "Not a valid comma-delimited list of drivers."
+    return 2
+  fi
+
+  local match_setup="${5}"
+
+  if ! is_string "${match_setup}" \
+    || [[ "${match_setup}" =~ "${NON_DELIM_REGEX}" ]]; then
+    print_error_to_log "Not a valid VFIO setup."
+    return 2
+  fi
 
   if ! vfio_setup_src_select_groups \
       "${do_enable_verbosity}" \
       "${do_skip_prompt}" \
-      "excluded_iommu_group_delim" \
+      "iommu_group_delim" \
     || ! vfio_setup_src_select_many_setup \
       "${do_enable_verbosity}" \
       "${do_skip_prompt}" \
       "${excluded_iommu_group_delim}"; then
     return 1
   fi
+
+  return 0
 }
 
 #
@@ -113,7 +129,7 @@ function vfio_setup_src_select_groups
   local -n excluded_iommu_group_delim_ref="${3}"
 
   if is_string "${excluded_iommu_group_delim_ref}" \
-    && has_unmatch \
+    && reference_has_unmatch \
       "excluded_iommu_group_delim_ref" \
       "${IOMMU_GROUP_DELIM_REGEX}"; then
     print_error_to_log "Invalid IOMMU groups."
@@ -140,7 +156,7 @@ function vfio_setup_src_select_groups
     read excluded_iommu_group_delim_ref
 
     if ! is_string "${excluded_iommu_group_delim_ref}" \
-      || has_match \
+      || reference_has_match \
         "excluded_iommu_group_delim_ref" \
         "${IOMMU_GROUP_DELIM_REGEX}"; then
         if "${do_enable_verbosity}"; then
@@ -233,14 +249,14 @@ function vfio_setup_src_select_this_setup
   local included_driver_delim="${output[1]}"
 
   case "${match,,}" in
-    "dynamic" )
-      if ! dynamic_vfio_src \
-        "${enable_verbosity}"; then
-        return 1
-      fi
+    # "dynamic" )
+    #   if ! dynamic_vfio_src \
+    #     "${enable_verbosity}"; then
+    #     return 1
+    #   fi
 
-      return 0
-      ;;
+    #   return 0
+    #   ;;
 
     "grub" )
       if ! grub_vfio_src_main \
