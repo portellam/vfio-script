@@ -353,4 +353,173 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
 
   #endregion
 
+  #region Hardware IDs
+
+  #
+  # $1 : true/false enable verbosity.
+  # $2 : true/false skip prompt.
+  # $3 : true/false use driver "vfio-pci" or "pci-stub".
+  # $4 : the comma delimited list of blacklisted devices' IDs as a reference.
+  #
+  function selection_src_select_blacklisted_hardware_ids
+  {
+    if ! is_boolean "${1}" \
+      || ! is_boolean "${2}" \
+      || ! is_boolean "${3}" \
+      || ! is_reference "${4}"; then
+      return 2
+    fi
+
+    local do_enable_verbosity="${1}"
+    local do_skip_prompt="${2}"
+    local do_use_vfio_pci="${3}"
+    local -n blacklisted_drivers_ref="${4}"
+
+    local placeholder_driver="vfio-pci"
+
+    if ! "${do_use_vfio_pci}"; then
+      placeholder_driver="pci-stub"
+    fi
+
+    local error="Invalid blacklisted devices' IDs"
+    error+=" (using driver \"${placeholder_driver}\")."
+    local verbose_error="Please enter a comma-delimited list of colon-delimited"
+    verbose_error+="strings of two, with alphanumeric text."
+
+    if is_string "${blacklisted_drivers_ref}" \
+      && ! [[ "${blacklisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
+      && ! [[ "${blacklisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+      print_error_to_log "${error}"
+
+      if "${do_enable_verbosity}"; then
+        print_error_to_log "${verbose_error}"
+      fi
+
+      return 2
+    fi
+
+    for index in $( seq 0 2 ); do
+      if "${do_enable_verbosity}"; then
+        echo \
+          -en \
+          "Enter a comma-delimited list of devices' IDs"\
+          " (colon-delimited strings of two, with alphanumeric text) to be" \
+          " blacklisted from the Host machine and use the driver" \
+          "\"${placeholder_driver}\" (leave blank to skip): "
+
+      else
+        echo \
+          -en \
+          "Enter a comma-delimited list of blacklisted devices' IDs: "
+      fi
+
+      read blacklisted_drivers_ref
+
+      if ! is_string "${blacklisted_drivers_ref}"; then
+        do_skip_prompt=true
+      fi
+
+      if "${do_skip_prompt}"; then
+        if "${do_enable_verbosity}"; then
+          print_output_to_log "Skipped."
+        fi
+
+        return 0
+      fi
+
+      if [[ "${blacklisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
+        || [[ "${blacklisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+        print_output_to_log "Validated blacklisted devices' IDs."
+        return 0
+      fi
+    done
+
+    print_error_to_log "${error}"
+
+    if "${do_enable_verbosity}"; then
+      print_error_to_log "${verbose_error}"
+    fi
+
+    return 1
+  }
+
+  #
+  # $1 : true/false enable verbosity.
+  # $2 : true/false skip prompt.
+  # $4 : the comma delimited list of whitelisted devices' IDs as a reference.
+  #
+  function selection_src_select_whitelisted_hardware_ids
+  {
+    if ! is_boolean "${1}" \
+      || ! is_boolean "${2}" \
+      || ! is_reference "${3}"; then
+      return 2
+    fi
+
+    local do_enable_verbosity="${1}"
+    local do_skip_prompt="${2}"
+    local -n whitelisted_drivers_ref="${3}"
+
+    local error="Invalid whitelisted devices' IDs."
+    local verbose_error="Please enter a comma-delimited list of colon-delimited"
+    verbose_error+="strings of two, with alphanumeric text."
+
+    if is_string "${whitelisted_drivers_ref}" \
+      && ! [[ "${whitelisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
+      && ! [[ "${whitelisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+      print_error_to_log "${error}"
+
+      if "${do_enable_verbosity}"; then
+        print_error_to_log "${verbose_error}"
+      fi
+
+      return 2
+    fi
+
+    for index in $( seq 0 2 ); do
+      if "${do_enable_verbosity}"; then
+        echo \
+          -en \
+          "Enter a comma-delimited list of devices' IDs"\
+          " (colon-delimited strings of two, with alphanumeric text) to be" \
+          " whitelisted from the Host machine (leave blank to skip): "
+
+      else
+        echo \
+          -en \
+          "Enter a comma-delimited list of whitelisted devices' IDs: "
+      fi
+
+      read whitelisted_drivers_ref
+
+      if ! is_string "${whitelisted_drivers_ref}"; then
+        do_skip_prompt=true
+      fi
+
+      if "${do_skip_prompt}"; then
+        if "${do_enable_verbosity}"; then
+          print_output_to_log "Skipped."
+        fi
+
+        return 0
+      fi
+
+      if [[ "${whitelisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
+        || [[ "${whitelisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+        print_output_to_log "Validated whitelisted devices' IDs."
+        return 0
+      fi
+    done
+
+    print_error_to_log "${error}"
+
+    if "${do_enable_verbosity}"; then
+      print_error_to_log "${verbose_error}"
+    fi
+
+    return 1
+  }
+
+  #endregion
+
 #endregion
