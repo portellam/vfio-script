@@ -1,7 +1,7 @@
 # VFIO Script
 ### Development | v0.0.1
-Easily install, uninstall, or reinstall a VFIO setup on a Linux machine. Choose
-between a dynamic, GRUB, or static setup.
+Easily install, uninstall, or reinstall a hardware-passthrough (VFIO) setup on a
+Linux machine. Select from a dynamic, GRUB, or static setup.
 
 #### View this repository on [Codeberg][01] or [GitHub][02].
 [01]: https://codeberg.org/portellam/vfio-script
@@ -12,17 +12,21 @@ between a dynamic, GRUB, or static setup.
 - [1. Why?](#1-why)
 - [2. Related Projects](#2-related-projects)
 - [3. Documentation](#3-documentation)
-- [4. Download](#4-download)
-- [5. Usage](#5-usage)
-  - [5.1. Install](#51-install)
-  - [5.2. Executable](#52-executable)
-  - [5.3. VFIO Setups](#53-vfio-setups)
-- [6. Contact](#6-contact)
-- [7. References](#7-references)
+- [4. Requirements](#4-requirements)
+  - [4.1. Software](#41-software)
+  - [4.2. Hardware](#42-hardware)
+- [5. Download](#4-download)
+- [6. Usage](#6-usage)
+  - [6.1. Install](#61-install)
+  - [6.2. Executable](#62-executable)
+  - [6.3. VFIO Setups](#63-vfio-setups)
+- [7. Contact](#7-contact)
+- [8. Contact](#8-disclaimer)
+- [9. References](#9-references)
 
 ## Contents
 ### 1. Why?
-Do you like editing configuration files? Repeatedly?
+Do you like *repeatedly* editing configuration files?
 
 No? Then you're going **sane**.
 
@@ -34,12 +38,34 @@ or [GitHub][22].
 [22]: https://github.com/portellam/vfio-collection
 
 ### 3. Documentation
-- What is VFIO?[<sup>[2]</sup>](#2)
-- VFIO Discussion and Support[<sup>[3]</sup>](#3)
-- Hardware-Passthrough Guide[<sup>[1]</sup>](#1)
-- Virtual Machine XML Format Guide[<sup>[4]</sup>](#4)
+- What is VFIO?[<sup>[3]</sup>](#3)
+- VFIO Discussion and Support[<sup>[4]</sup>](#4)
+- Hardware-Passthrough Guide[<sup>[2]</sup>](#2)
+- Virtual Machine XML Format Guide[<sup>[5]</sup>](#5)
 
-### 4. Download
+### 4. Requirements
+#### 4.1. Software
+1. [`parse-iommu-devices`](#1) to reliably parse hardware devices.
+2. **GRUB** to enable firmware options and (optionally) define a VFIO setup.
+3. **Linux** as the host operating system and terminal interface/command line.
+
+  | Linux Distributions  | Tested | Supported  |
+  | :------------------- | :----: | :--------: |
+  | Arch                 | No     | N/A        |
+  | Debian               | Yes    | 12         |
+  | Gentoo               | No     | N/A        |
+  | Red Hat Enterprise   | No     | N/A        |
+  | SUSE                 | No     | N/A        |
+
+#### 4.2. Hardware
+The following firmware options are supported and enabled (motherboard and CPU):
+- **IOMMU**
+    - For **AMD** machines:&nbsp;`AMD-Vi`
+    - For **Intel** machines:&ensp;&nbsp;`VT-d`
+    - **ARM** (`SMMU`) and other CPU architectures are not **explicitly**
+    supported by `vfio-script`. *Use at your own risk.*
+
+### 5. Download
 - Download the Latest Release:&ensp;[Codeberg][41] or [GitHub][42].
 
 - Download the `.zip` file:
@@ -68,8 +94,8 @@ or [GitHub][22].
 [41]: https://codeberg.org/portellam/vfio-script/releases/latest
 [42]: https://github.com/portellam/vfio-script/releases/latest
 
-### 5. Usage
-#### 5.1. Install
+### 6. Usage
+#### 6.1. Install
 Installer will copy the script file to `/usr/local/bin/`, and source files to
 `/usr/local/bin/vfio-script.d/`.
 
@@ -77,7 +103,7 @@ Installer will copy the script file to `/usr/local/bin/`, and source files to
 sudo bash installer.sh
 ```
 
-#### 5.2. Executable
+#### 6.2. Executable
 - From anywhere, execute: `vfio-script`
 
 ```
@@ -171,7 +197,7 @@ sudo bash installer.sh
                                   HWIDS is a comma delimited list of text.
 ```
 
-#### 5.3. VFIO setups
+#### 6.3. VFIO setups
 - **Dynamic**
   - Define a temporary VFIO setup as a QEMU command line.
   - Append to a Libvirt hook or a Guest machine configuration file.
@@ -206,29 +232,41 @@ sudo bash installer.sh
       - creates `/etc/modprobe.d/vfio.conf`.
       - **overwrites** `/etc/modules`.
 
-### 6. Contact
-Did you encounter a bug? Do you need help? Please visit the [Issues][61] page.
+### 7. Contact
+Did you encounter a bug? Do you need help? Please visit the [Issues][71] page.
 
-[61]: https://github.com/portellam/vfio-script/issues
+[71]: https://github.com/portellam/vfio-script/issues
 
-### 7. References
+### 8. Disclaimer
+Use at your own risk. Please review your system's specifications and resources.
+
+### 9. References
 #### 1.
+&nbsp;&nbsp;**parse-iommu-devices**. Codeberg. Accessed May 7, 2025.
+
+&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://codeberg.org/portellam/parse-iommu-devices.</sup>
+
+&nbsp;&nbsp;**parse-iommu-devices**. GitHub. Accessed May 7, 2025.
+
+&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://github.com/portellam/parse-iommu-devices.</sup>
+
+#### 2.
 &nbsp;&nbsp;**PCI passthrough via OVMF**. ArchWiki. Accessed June 14, 2024.
 
 &nbsp;&nbsp;&nbsp;&nbsp;<sup>https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF.</sup>
 
-#### 2.
+#### 3.
 &nbsp;&nbsp;**VFIO - ‘Virtual Function I/O’ - The Linux Kernel Documentation**.
 The linux kernel. Accessed June 14, 2024.
 
 &nbsp;&nbsp;&nbsp;&nbsp;<sup>https://www.kernel.org/doc/html/latest/driver-api/vfio.html.</sup>
 
-#### 3.
+#### 4.
 &nbsp;&nbsp;**VFIO Discussion and Support**. Reddit. Accessed June 14, 2024.
 
 &nbsp;&nbsp;&nbsp;&nbsp;<sup>https://www.reddit.com/r/VFIO/.</sup>
 
-#### 4.
+#### 5.
 &nbsp;&nbsp;**XML Design Format** GitHub - libvirt/libvirt. Accessed June 18, 2024.
 
 &nbsp;&nbsp;&nbsp;&nbsp;<sup>https://github.com/libvirt/libvirt/blob/master/docs/formatdomain.rst.</sup>
