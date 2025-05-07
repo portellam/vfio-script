@@ -426,7 +426,7 @@ function is_variable
 # $1 : the variable or enumerable as a reference.
 # $2 : the regex to match.
 #
-function has_match
+function reference_reference_has_match
 {
   if ! is_string "${2}"; then
     return 2
@@ -477,7 +477,7 @@ function has_match
 # $1 : the variable or enumerable as a reference.
 # $2 : the regex to unmatch.
 #
-function has_unmatch
+function reference_reference_has_unmatch
 {
   if ! is_string "${2}"; then
     return 2

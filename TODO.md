@@ -1,4 +1,12 @@
 # TODO:
+- [ ] simplify input params
+  - get IOMMU groups to include.
+  - get IOMMU groups to exclude.
+  - get non VGA groups' IDs, hardware IDs, and driver names.
+
+
+
+
 - [ ] sanitize inputs.
 - [ ] add logic to undo changes for other setups, if a given one is chosen.
   - in other words, prior to install of a given setup, uninstall the rest.
