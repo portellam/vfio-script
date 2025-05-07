@@ -85,13 +85,13 @@ function grub_vfio_src_main
   local cmdline_prefix="${1}"
 
   if is_string "${cmdline_prefix}" \
-    && has_unmatch \
+    && reference_has_unmatch \
       "cmdline_prefix" \
       "${DRIVER_DELIM_REGEX}" \
-    && has_unmatch \
+    && reference_has_unmatch \
       "cmdline_prefix" \
       "${HARDWARE_ID_DELIM_REGEX}" \
-    && has_unmatch \
+    && reference_has_unmatch \
       "cmdline_prefix" \
       "${IOMMU_GROUP_DELIM_REGEX}"; then
     cmdline_prefix="${cmdline_prefix//\"/}"
@@ -104,7 +104,7 @@ function grub_vfio_src_main
   local excluded_iommu_group_delim="${1}"
 
   if is_string "${excluded_iommu_group_delim}" \
-    && ! has_match \
+    && ! reference_has_match \
       "excluded_iommu_group_delim" \
       "${IOMMU_GROUP_DELIM_REGEX}"; then
     return 2
@@ -167,7 +167,7 @@ function grub_vfio_src_get_non_video_delims
   local excluded_iommu_group_delim="${1}"
 
   if is_string "${excluded_iommu_group_delim}" \
-    && ! has_match \
+    && ! reference_has_match \
       "excluded_iommu_group_delim" \
       "${IOMMU_GROUP_DELIM_REGEX}"; then
     return 2
@@ -204,7 +204,7 @@ function grub_vfio_src_get_video_delim_lists
   local excluded_iommu_group_delim="${1}"
 
   if is_string "${excluded_iommu_group_delim}" \
-    && ! has_match \
+    && ! reference_has_match \
       "excluded_iommu_group_delim" \
       "${IOMMU_GROUP_DELIM_REGEX}"; then
     return 2

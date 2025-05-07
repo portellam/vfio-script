@@ -28,6 +28,11 @@ source \
   "${SOURCE_PATH}" \
   "${COLUMN_SIZE}"
 
+source \
+  "${SOURCE_PATH}static_vfio_src" \
+  "${SOURCE_PATH}" \
+  "${COLUMN_SIZE}"
+
 #endregion
 
 #region Parameters
@@ -104,13 +109,13 @@ function static_vfio_src_main
   local cmdline_prefix="${1}"
 
   if is_string "${cmdline_prefix}" \
-    && has_unmatch \
+    && reference_has_unmatch \
       "cmdline_prefix" \
       "${DRIVER_DELIM_REGEX}" \
-    && has_unmatch \
+    && reference_has_unmatch \
       "cmdline_prefix" \
       "${HARDWARE_ID_DELIM_REGEX}" \
-    && has_unmatch \
+    && reference_has_unmatch \
       "cmdline_prefix" \
       "${IOMMU_GROUP_DELIM_REGEX}"; then
     cmdline_prefix="${cmdline_prefix//\"/}"
@@ -123,7 +128,7 @@ function static_vfio_src_main
   local vfio_pci_driver_delim="${1}"
 
   if is_string "${vfio_pci_driver_delim}" \
-    && ! has_match \
+    && ! reference_has_match \
       "vfio_pci_driver_delim" \
       "${DRIVER_DELIM_REGEX}"; then
     return 2
@@ -132,7 +137,7 @@ function static_vfio_src_main
   local vfio_pci_hardware_id_delim="${2}"
 
   if is_string "${vfio_pci_hardware_id_delim}" \
-    && ! has_match \
+    && ! reference_has_match \
       "vfio_pci_hardware_id_delim" \
       "${HARDWARE_ID_DELIM_REGEX}"; then
     return 2
@@ -141,26 +146,29 @@ function static_vfio_src_main
   local pci_stub_hardware_id_delim="${3}"
 
   if is_string "${pci_stub_hardware_id_delim}" \
-    && ! has_match \
+    && ! reference_has_match \
       "pci_stub_hardware_id_delim" \
       "${HARDWARE_ID_DELIM_REGEX}"; then
     return 2
   fi
 
-  static_vfio_src_sanitize_delim \
-    "${pci_stub_hardware_id_delim}" \
-    "${DRIVER_REGEX}" \
-    "${DRIVER_DELIM_REGEX}"
+  pci_stub_hardware_id_delim="$( \
+    remove_unnecessary_delimiters \
+      "${pci_stub_hardware_id_delim}" \
+      "${DELIM}"
+  )"
 
-  static_vfio_src_sanitize_delim \
-    "${vfio_pci_driver_delim}" \
-    "${HARDWARE_ID_REGEX}" \
-    "${HARDWARE_ID_DELIM_REGEX}"
+  vfio_pci_driver_delim="$( \
+    remove_unnecessary_delimiters \
+      "${vfio_pci_driver_delim}" \
+      "${DELIM}"
+  )"
 
-  static_vfio_src_sanitize_delim \
-    "${vfio_pci_hardware_id_delim}" \
-    "${HARDWARE_ID_REGEX}" \
-    "${HARDWARE_ID_DELIM_REGEX}"
+  vfio_pci_hardware_id_delim="$( \
+    remove_unnecessary_delimiters \
+      "${vfio_pci_hardware_id_delim}" \
+      "${DELIM}"
+  )"
 
   if ! grub_vfio_src_get_kernel_cmdline_iommu_driver; then
     return 1
@@ -243,56 +251,6 @@ function static_vfio_src_get_kernel_cmdline_iommu_driver
 
       return 1 ;;
   esac
-}
-
-#
-# $1 : the delimited string.
-# $2 : the element regex.
-# $3 : the comma delimited list regex.
-#
-function static_vfio_src_sanitize_delim
-{
-  if [[ "${1}" == "" ]]; then
-    return 1
-  fi
-
-  if [[ "${2}" == "" ]]; then
-    return 1
-  fi
-
-  if [[ "${3}" == "" ]]; then
-    return 1
-  fi
-
-  local -n delim="${1}"
-  local regex="${2}"
-  local delim_regex="${3}"
-
-  if ! [[ "${delim}" =~ "${delim_regex}" ]]; then
-    read \
-      -r \
-      -a list \
-      <<< "${delim}"
-
-    delim=""
-
-    for item in "${list[@]}"; do
-      if ! [[ "${item}" =~ "${regex}" ]]; then
-        continue
-      fi
-
-      delim+="${item}${DELIM}"
-    done
-  fi
-
-  local last_char="$( \
-    echo \
-    ${delim:${#delim}-1} \
-  )"
-
-  if [[ "${last_char}" == "${DELIM}" ]]; then
-    delim="${delim:${#delim}-1}"
-  fi
 }
 
 function static_vfio_src_update_grub
