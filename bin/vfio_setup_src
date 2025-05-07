@@ -74,10 +74,10 @@ function vfio_setup_src_main
 
   local do_enable_verbosity="${1}"
   local do_skip_prompt="${2}"
-  local -n iommu_groups_to_exclude_delim_ref_1=""
+  local excluded_iommu_group_delim=""
 
   if [[ "${3}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
-    local -n iommu_groups_to_exclude_delim_ref_1="${3}"
+    excluded_iommu_group_delim="${3}"
   fi
 
   shift
@@ -86,15 +86,13 @@ function vfio_setup_src_main
   if ! vfio_setup_src_select_groups \
       "${do_enable_verbosity}" \
       "${do_skip_prompt}" \
-      "${iommu_groups_to_exclude_delim_ref_1}"
-    || ! is_boolean "${2}" \
-    || ! is_string "${3}" \
-    || ! is_string "${4}"; then
+      "excluded_iommu_group_delim" \
+    || ! vfio_setup_src_select_many_setup \
+      "${do_enable_verbosity}" \
+      "${do_skip_prompt}" \
+      "${excluded_iommu_group_delim}"; then
     return 1
   fi
-
-  
-  vfio_setup_src_select_many_setup
 }
 
 #
@@ -112,11 +110,11 @@ function vfio_setup_src_select_groups
 
   local do_enable_verbosity="${1}"
   local do_skip_prompt="${2}"
-  local -n iommu_groups_to_exclude_delim_ref_2="${3}"
+  local -n excluded_iommu_group_delim_ref="${3}"
 
-  if is_string "${iommu_groups_to_exclude_delim_ref_2}" \
+  if is_string "${excluded_iommu_group_delim_ref}" \
     && has_unmatch \
-      "iommu_groups_to_exclude_delim_ref_2" \
+      "excluded_iommu_group_delim_ref" \
       "${IOMMU_GROUP_DELIM_REGEX}"; then
     print_error_to_log "Invalid IOMMU groups."
     return 1
@@ -139,11 +137,11 @@ function vfio_setup_src_select_groups
         "Enter a comma-delimited list of excluded IOMMU groups: "
     fi
 
-    read iommu_groups_to_exclude_delim
+    read excluded_iommu_group_delim_ref
 
-    if ! is_string "${iommu_groups_to_exclude_delim}" \
+    if ! is_string "${excluded_iommu_group_delim_ref}" \
       || has_match \
-        "iommu_groups_to_exclude_delim" \
+        "excluded_iommu_group_delim_ref" \
         "${IOMMU_GROUP_DELIM_REGEX}"; then
         if "${do_enable_verbosity}"; then
           print_output_to_log "Validated IOMMU groups."
@@ -163,13 +161,19 @@ function vfio_setup_src_select_groups
 #
 # $1 : true/false enable verbosity.
 # $2 : the match to select a VFIO setup.
+# $3 : the comma delimited list of IOMMU groups to exclude.
 #
 function vfio_setup_src_select_many_setup
 {
   if ! is_boolean "${1}" \
-    || ! is_string "${2}"; then
+    || ! is_string "${2}" \
+    || ! is_string "${3}"; then
     return 1
   fi
+
+  local do_enable_verbosity="${1}"
+  local do_skip_prompt="${2}"
+  local excluded_iommu_group_delim=""
 
   local enable_verbosity="${1}"
   local match="${2}"
@@ -191,7 +195,8 @@ function vfio_setup_src_select_many_setup
 
     if vfio_setup_src_select_this_setup \
       "${enable_verbosity}" \
-      "${match}"; then
+      "${match}" \
+      "${excluded_iommu_group_delim}"; then
       return 0
     fi
   done
@@ -203,16 +208,29 @@ function vfio_setup_src_select_many_setup
 #
 # $1 : true/false enable verbosity.
 # $2 : the match to select a VFIO setup.
+# $3 : the comma delimited list of IOMMU groups to exclude.
 #
 function vfio_setup_src_select_this_setup
 {
   if ! is_boolean "${1}" \
-    || ! is_string "${2}"; then
+    || ! is_string "${2}" \
+    || ! is_string "${3}"; then
     return 1
   fi
 
   local enable_verbosity="${1}"
   local match="${2}"
+  local excluded_iommu_group_delim="${3}"
+
+  local output="$( \
+    eval \
+      "${EXECUTABLE}" \
+      --ignore-group "${excluded_iommu_group_delim}" \
+      --pcie
+  )"
+
+  local included_hardware_id_delim="${output[0]}"
+  local included_driver_delim="${output[1]}"
 
   case "${match,,}" in
     "dynamic" )
@@ -225,8 +243,9 @@ function vfio_setup_src_select_this_setup
       ;;
 
     "grub" )
-      if ! grub_vfio_src \
-        "${enable_verbosity}"; then
+      if ! grub_vfio_src_main \
+        "${enable_verbosity}" \
+        "${excluded_iommu_group_delim}"; then
         return 1
       fi
 
@@ -234,8 +253,10 @@ function vfio_setup_src_select_this_setup
       ;;
 
     "static" )
-      if ! static_vfio_src \
-        "${enable_verbosity}"; then
+      if ! static_vfio_src_main \
+        "${enable_verbosity}" \
+        "${included_driver_delim}" \
+        "${included_hardware_id_delim}"; then
         return 1
       fi
 
