@@ -26,161 +26,331 @@ source \
 
 IOMMU_GROUP_REGEX="^[0-9]+$"
 IOMMU_GROUP_DELIM_REGEX="^([0-9]+)(,[0-9]+)*$"
+WORD_REGEX="^[a-zA-Z]+$"
+WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
 
 #endregion
 
 #region Logic
 
-#
-# $1 : true/false enable verbosity.
-# $2 : true/false skip prompt.
-# $3 : the comma delimited list of blacklisted IOMMU groups as a reference.
-#
-function selection_src_select_blacklisted_iommu_groups
-{
-  if ! is_boolean "${1}" \
-    || ! is_boolean "${2}" \
-    || ! is_string "${3}"; then
-    return 2
-  fi
+  #region Drivers
 
-  local do_enable_verbosity="${1}"
-  local do_skip_prompt="${2}"
-  local -n blacklisted_iommu_groups_ref="${3}"
+  #
+  # $1 : true/false enable verbosity.
+  # $2 : true/false skip prompt.
+  # $3 : true/false use "vfio-pci" or "pci-stub".
+  # $4 : the comma delimited list of blacklisted devices' drivers as a reference.
+  #
+  function selection_src_select_blacklisted_drivers
+  {
+    if ! is_boolean "${1}" \
+      || ! is_boolean "${2}" \
+      || ! is_boolean "${3}" \
+      || ! is_reference "${4}"; then
+      return 2
+    fi
 
-  local error="Invalid blacklisted IOMMU groups."
-  local verbose_error="Please enter a comma-delimited list of positive integers."
+    local do_enable_verbosity="${1}"
+    local do_skip_prompt="${2}"
+    local do_use_vfio_pci="${3}"
+    local -n blacklisted_drivers_ref="${4}"
 
-  if is_string "${blacklisted_iommu_groups_ref}" \
-    && ! [[ "${blacklisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
-    && ! [[ "${blacklisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
+    local placeholder_driver="vfio-pci"
+
+    if ! "${do_use_vfio_pci}"; then
+      placeholder_driver="pci-stub"
+    fi
+
+    local error="Invalid blacklisted devices' drivers (using \"${placeholder_driver}\")."
+    local verbose_error="Please enter a comma-delimited list of devices' drivers."
+
+    if is_string "${blacklisted_drivers_ref}" \
+      && ! [[ "${blacklisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
+      && ! [[ "${blacklisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+      print_error_to_log "${error}"
+
+      if "${do_enable_verbosity}"; then
+        print_error_to_log "${verbose_error}"
+      fi
+
+      return 2
+    fi
+
+    for index in $( seq 0 2 ); do
+      if "${do_enable_verbosity}"; then
+        echo \
+          -en \
+          "Enter a comma-delimited list of devices' drivers to be blacklisted" \
+          "for the Host machine (to use \"${placeholder_driver}\")" \
+          " (leave blank to skip): "
+
+      else
+        echo \
+          -en \
+          "Enter a comma-delimited list of blacklisted devices' drivers: "
+      fi
+
+      read blacklisted_drivers_ref
+
+      if ! is_string "${blacklisted_drivers_ref}"; then
+        do_skip_prompt=true
+      fi
+
+      if "${do_skip_prompt}"; then
+        if "${do_enable_verbosity}"; then
+          print_output_to_log "Skipped."
+        fi
+
+        return 0
+      fi
+
+      if [[ "${blacklisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
+        || [[ "${blacklisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+        print_output_to_log "Validated blacklisted devices' drivers."
+        return 0
+      fi
+    done
+
     print_error_to_log "${error}"
 
     if "${do_enable_verbosity}"; then
       print_error_to_log "${verbose_error}"
     fi
 
-    return 2
-  fi
+    return 1
+  }
 
-  for index in $( seq 0 2 ); do
-    if "${do_enable_verbosity}"; then
-      echo \
-        -en \
-        "Enter a comma-delimited list of IOMMU groups (positive integers) to" \
-        " reserve for the Host machine (to exclude from any Guest machines)" \
-        " (leave blank to skip): "
-
-    else
-      echo \
-        -en \
-        "Enter a comma-delimited list of blacklisted IOMMU groups: "
+  #
+  # $1 : true/false enable verbosity.
+  # $2 : true/false skip prompt.
+  # $3 : the comma delimited list of whitelisted devices' drivers as a reference.
+  #
+  function selection_src_select_whitelisted_drivers
+  {
+    if ! is_boolean "${1}" \
+      || ! is_boolean "${2}" \
+      || ! is_reference "${3}"; then
+      return 2
     fi
 
-    read blacklisted_iommu_groups_ref
+    local do_enable_verbosity="${1}"
+    local do_skip_prompt="${2}"
+    local -n whitelisted_drivers_ref="${3}"
 
-    if ! is_string "${blacklisted_iommu_groups_ref}"; then
-      do_skip_prompt=true
-    fi
+    local error="Invalid whitelisted devices' drivers (using \"${placeholder_driver}\")."
+    local verbose_error="Please enter a comma-delimited list of devices' drivers."
 
-    if "${do_skip_prompt}"; then
+    if is_string "${whitelisted_drivers_ref}" \
+      && ! [[ "${whitelisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
+      && ! [[ "${whitelisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+      print_error_to_log "${error}"
+
       if "${do_enable_verbosity}"; then
-        print_output_to_log "Skipped."
+        print_error_to_log "${verbose_error}"
       fi
 
-      return 0
+      return 2
     fi
 
-    if [[ "${blacklisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
-      || [[ "${blacklisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
-      print_output_to_log "Validated blacklisted IOMMU groups."
-      return 0
-    fi
-  done
+    for index in $( seq 0 2 ); do
+      if "${do_enable_verbosity}"; then
+        echo \
+          -en \
+          "Enter a comma-delimited list of devices' drivers to be whitelisted" \
+          "for the Host machine (leave blank to skip): "
 
-  print_error_to_log "${error}"
+      else
+        echo \
+          -en \
+          "Enter a comma-delimited list of whitelisted devices' drivers: "
+      fi
 
-  if "${do_enable_verbosity}"; then
-    print_error_to_log "${verbose_error}"
-  fi
+      read whitelisted_drivers_ref
 
-  return 1
-}
+      if ! is_string "${whitelisted_drivers_ref}"; then
+        do_skip_prompt=true
+      fi
 
-#
-# $1 : true/false enable verbosity.
-# $2 : true/false skip prompt.
-# $3 : the comma delimited list of whitelisted IOMMU groups as a reference.
-#
-function selection_src_select_whitelisted_iommu_groups
-{
-  if ! is_boolean "${1}" \
-    || ! is_boolean "${2}" \
-    || ! is_string "${3}"; then
-    return 2
-  fi
+      if "${do_skip_prompt}"; then
+        if "${do_enable_verbosity}"; then
+          print_output_to_log "Skipped."
+        fi
 
-  local do_enable_verbosity="${1}"
-  local do_skip_prompt="${2}"
-  local -n whitelisted_iommu_groups_ref="${3}"
+        return 0
+      fi
 
-  local error="Invalid whitelisted IOMMU groups."
-  local verbose_error="Please enter a comma-delimited list of positive integers."
+      if [[ "${whitelisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
+        || [[ "${whitelisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+        print_output_to_log "Validated whitelisted devices' drivers."
+        return 0
+      fi
+    done
 
-  if is_string "${whitelisted_iommu_groups_ref}" \
-    && ! [[ "${whitelisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
-    && ! [[ "${whitelisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
     print_error_to_log "${error}"
 
     if "${do_enable_verbosity}"; then
       print_error_to_log "${verbose_error}"
     fi
 
-    return 2
-  fi
+    return 1
+  }
 
-  for index in $( seq 0 2 ); do
-    if "${do_enable_verbosity}"; then
-      echo \
-        -en \
-        "Enter a comma-delimited list of IOMMU groups (positive integers) to" \
-        " reserve for any Guest machine (to exclude from the Host machine)" \
-        " (leave blank to skip): "
+  #endregion
 
-    else
-      echo \
-        -en \
-        "Enter a comma-delimited list of whitelisted IOMMU groups: "
+  #region IOMMU
+
+  #
+  # $1 : true/false enable verbosity.
+  # $2 : true/false skip prompt.
+  # $3 : the comma delimited list of blacklisted IOMMU groups as a reference.
+  #
+  function selection_src_select_blacklisted_iommu_groups
+  {
+    if ! is_boolean "${1}" \
+      || ! is_boolean "${2}" \
+      || ! is_reference "${3}"; then
+      return 2
     fi
 
-    read whitelisted_iommu_groups_ref
+    local do_enable_verbosity="${1}"
+    local do_skip_prompt="${2}"
+    local -n blacklisted_iommu_groups_ref="${3}"
 
-    if ! is_string "${whitelisted_iommu_groups_ref}"; then
-      do_skip_prompt=true
-    fi
+    local error="Invalid blacklisted IOMMU groups."
+    local verbose_error="Please enter a comma-delimited list of positive integers."
 
-    if "${do_skip_prompt}"; then
+    if is_string "${blacklisted_iommu_groups_ref}" \
+      && ! [[ "${blacklisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
+      && ! [[ "${blacklisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
+      print_error_to_log "${error}"
+
       if "${do_enable_verbosity}"; then
-        print_output_to_log "Skipped."
+        print_error_to_log "${verbose_error}"
       fi
 
-      return 0
+      return 2
     fi
 
-    if [[ "${whitelisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
-      || [[ "${whitelisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
-      print_output_to_log "Validated whitelisted IOMMU groups."
-      return 0
+    for index in $( seq 0 2 ); do
+      if "${do_enable_verbosity}"; then
+        echo \
+          -en \
+          "Enter a comma-delimited list of IOMMU groups (positive integers) to" \
+          " reserve for any Guest machine (to exclude from the Host machine)" \
+          " (leave blank to skip): "
+
+      else
+        echo \
+          -en \
+          "Enter a comma-delimited list of blacklisted IOMMU groups: "
+      fi
+
+      read blacklisted_iommu_groups_ref
+
+      if ! is_string "${blacklisted_iommu_groups_ref}"; then
+        do_skip_prompt=true
+      fi
+
+      if "${do_skip_prompt}"; then
+        if "${do_enable_verbosity}"; then
+          print_output_to_log "Skipped."
+        fi
+
+        return 0
+      fi
+
+      if [[ "${blacklisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
+        || [[ "${blacklisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
+        print_output_to_log "Validated blacklisted IOMMU groups."
+        return 0
+      fi
+    done
+
+    print_error_to_log "${error}"
+
+    if "${do_enable_verbosity}"; then
+      print_error_to_log "${verbose_error}"
     fi
-  done
 
-  print_error_to_log "${error}"
+    return 1
+  }
 
-  if "${do_enable_verbosity}"; then
-    print_error_to_log "${verbose_error}"
-  fi
+  #
+  # $1 : true/false enable verbosity.
+  # $2 : true/false skip prompt.
+  # $3 : the comma delimited list of whitelisted IOMMU groups as a reference.
+  #
+  function selection_src_select_whitelisted_iommu_groups
+  {
+    if ! is_boolean "${1}" \
+      || ! is_boolean "${2}" \
+      || ! is_reference "${3}"; then
+      return 2
+    fi
 
-  return 1
-}
+    local do_enable_verbosity="${1}"
+    local do_skip_prompt="${2}"
+    local -n whitelisted_iommu_groups_ref="${3}"
+
+    local error="Invalid whitelisted IOMMU groups."
+    local verbose_error="Please enter a comma-delimited list of positive integers."
+
+    if is_string "${whitelisted_iommu_groups_ref}" \
+      && ! [[ "${whitelisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
+      && ! [[ "${whitelisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
+      print_error_to_log "${error}"
+
+      if "${do_enable_verbosity}"; then
+        print_error_to_log "${verbose_error}"
+      fi
+
+      return 2
+    fi
+
+    for index in $( seq 0 2 ); do
+      if "${do_enable_verbosity}"; then
+        echo \
+          -en \
+          "Enter a comma-delimited list of IOMMU groups (positive integers) to" \
+          " reserve for the Host machine (to exclude from any Guest machines)" \
+          " (leave blank to skip): "
+
+      else
+        echo \
+          -en \
+          "Enter a comma-delimited list of whitelisted IOMMU groups: "
+      fi
+
+      read whitelisted_iommu_groups_ref
+
+      if ! is_string "${whitelisted_iommu_groups_ref}"; then
+        do_skip_prompt=true
+      fi
+
+      if "${do_skip_prompt}"; then
+        if "${do_enable_verbosity}"; then
+          print_output_to_log "Skipped."
+        fi
+
+        return 0
+      fi
+
+      if [[ "${whitelisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
+        || [[ "${whitelisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
+        print_output_to_log "Validated whitelisted IOMMU groups."
+        return 0
+      fi
+    done
+
+    print_error_to_log "${error}"
+
+    if "${do_enable_verbosity}"; then
+      print_error_to_log "${verbose_error}"
+    fi
+
+    return 1
+  }
+
+  #endregion
 
 #endregion
