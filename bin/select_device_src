@@ -35,6 +35,24 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
 
 #endregion
 
+#
+# NOTES:
+# - do I need to ask the user what information to inlcude/exclude?
+#   - should both be asked at runtime?
+#     - Exclusions for mutliple GRUB setup.
+#     - Inclusions for remainder setups.
+#   - should both be asked as arguments?
+#   - parse-iommu-devices does what I need already.
+#
+# TODO:
+# - [ ] place interaction logic AFTER choosing setup.
+#   - [ ] multiple GRUB setup => exclusions.
+#   - [ ] other setups => inclusions.
+# - [ ] arguments:
+#   - [ ] make inclusion/exclusion logic arguments which are tied to their
+#   respective VFIO setups (example: exclusions for multiple GRUB).
+#
+
 #region Logic
 
   #region Drivers
