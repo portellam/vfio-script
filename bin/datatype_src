@@ -607,8 +607,48 @@ function remove_unmatch
 }
 
 #
+# $1 : the first delimited enumerable as a reference.
+# $2 : the second enumerable.
+# $3 : the delimiter.
+#
+function remove_range
+{
+  if ! is_reference "${1}" \
+    || ! is_string "${2}"; then
+    return 2
+  fi
+
+  local -n reference_remove_range_first_delim="${1}"
+  local second_delim="${2}"
+  local delimiter="${3}"
+
+  if [[ "${#delimiter}" != 1 ]]; then
+    return 2
+  fi
+
+  ifs="${IFS}"
+  IFS="${delimiter}"
+
+  read \
+    -r \
+    -a \
+    second_list \
+    <<< "${second_delim}"
+
+  IFS="${ifs}"
+
+  for value in "${second_list[@]}"; do
+    reference_remove_range_first_delim="${reference_remove_range_first_delim//${delimiter},${value}/}"
+    reference_remove_range_first_delim="${reference_remove_range_first_delim//${value}${delimiter}/}"
+    reference_remove_range_first_delim="${reference_remove_range_first_delim//${value}}"
+  done
+
+  return 0
+}
+
+#
 # $1 : the enumerable as a reference.
-# $2 : the key.
+# $2 : the value.
 #
 function remove_value
 {

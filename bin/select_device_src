@@ -24,6 +24,10 @@ source \
 
 #region Parameters
 
+DELIMITER=","
+
+HARDWARE_ID_REGEX='^[a-zA-Z0-9]{4}:[a-zA-Z0-9]{4}$'
+HARDWARE_ID_DELIM_REGEX='^(\s*,\s*|\s*([A-Za-z0-9]{4}:\s*[A-Za-z0-9]{4})\s*,\s*)*$'
 IOMMU_GROUP_REGEX="^[0-9]+$"
 IOMMU_GROUP_DELIM_REGEX="^([0-9]+)(,[0-9]+)*$"
 WORD_REGEX="^[a-zA-Z]+$"
@@ -34,6 +38,35 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
 #region Logic
 
   #region Drivers
+
+  #
+  # $1 : the comma delimited list of whitelisted devices' drivers as a reference.
+  # $2 : the comma delimited list of blacklisted devices' drivers.
+  #
+  function selection_src_get_vfio_drivers
+  {
+    if is_string "${2}" \
+      && ! [[ "${2}" =~ "${HARDWARE_ID_REGEX}" ]] \
+      && ! [[ "${2}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
+      print_error_to_log "Invalid blacklisted devices' drivers."
+      return 2
+    fi
+
+    if [[ "${2}" == *"vfio-pci"* ]] \
+      || [[ "${2}" == *"pci-stub"* ]]; then
+      print_error_to_log "Blacklisted devices' contain VFIO placeholder drivers."
+      return 2
+    fi
+
+    if ! remove_range \
+        "${DELIMITER}" \
+        "${1}" \
+        "${2}"; then
+      return 1
+    fi
+
+    return 0
+  }
 
   #
   # $1 : true/false enable verbosity.
@@ -50,14 +83,14 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
 
     local do_enable_verbosity="${1}"
     local do_skip_prompt="${2}"
-    local -n blacklisted_drivers_ref="${3}"
+    local -n blacklisted_drivers_delim_ref="${3}"
 
     local error="Invalid blacklisted devices' drivers."
     local verbose_error="Please enter a comma-delimited list of devices' drivers."
 
-    if is_string "${blacklisted_drivers_ref}" \
-      && ! [[ "${blacklisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
-      && ! [[ "${blacklisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+    if is_string "${blacklisted_drivers_delim_ref}" \
+      && ! [[ "${blacklisted_drivers_delim_ref}" =~ "${WORD_REGEX}" ]] \
+      && ! [[ "${blacklisted_drivers_delim_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
       print_error_to_log "${error}"
 
       if "${do_enable_verbosity}"; then
@@ -80,9 +113,9 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
           "Enter a comma-delimited list of blacklisted devices' drivers: "
       fi
 
-      read blacklisted_drivers_ref
+      read blacklisted_drivers_delim_ref
 
-      if ! is_string "${blacklisted_drivers_ref}"; then
+      if ! is_string "${blacklisted_drivers_delim_ref}"; then
         do_skip_prompt=true
       fi
 
@@ -94,8 +127,8 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
         return 0
       fi
 
-      if [[ "${blacklisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
-        || [[ "${blacklisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+      if [[ "${blacklisted_drivers_delim_ref}" =~ "${WORD_REGEX}" ]] \
+        || [[ "${blacklisted_drivers_delim_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
         print_output_to_log "Validated blacklisted devices' drivers."
         return 0
       fi
@@ -125,14 +158,14 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
 
     local do_enable_verbosity="${1}"
     local do_skip_prompt="${2}"
-    local -n whitelisted_drivers_ref="${3}"
+    local -n whitelisted_drivers_delim_ref="${3}"
 
     local error="Invalid whitelisted devices' drivers."
     local verbose_error="Please enter a comma-delimited list of devices' drivers."
 
-    if is_string "${whitelisted_drivers_ref}" \
-      && ! [[ "${whitelisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
-      && ! [[ "${whitelisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+    if is_string "${whitelisted_drivers_delim_ref}" \
+      && ! [[ "${whitelisted_drivers_delim_ref}" =~ "${WORD_REGEX}" ]] \
+      && ! [[ "${whitelisted_drivers_delim_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
       print_error_to_log "${error}"
 
       if "${do_enable_verbosity}"; then
@@ -155,9 +188,9 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
           "Enter a comma-delimited list of whitelisted devices' drivers: "
       fi
 
-      read whitelisted_drivers_ref
+      read whitelisted_drivers_delim_ref
 
-      if ! is_string "${whitelisted_drivers_ref}"; then
+      if ! is_string "${whitelisted_drivers_delim_ref}"; then
         do_skip_prompt=true
       fi
 
@@ -169,8 +202,8 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
         return 0
       fi
 
-      if [[ "${whitelisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
-        || [[ "${whitelisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+      if [[ "${whitelisted_drivers_delim_ref}" =~ "${WORD_REGEX}" ]] \
+        || [[ "${whitelisted_drivers_delim_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
         print_output_to_log "Validated whitelisted devices' drivers."
         return 0
       fi
@@ -190,6 +223,29 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
   #region IOMMU
 
   #
+  # $1 : the comma delimited list of whitelisted IOMMU groups as a reference.
+  # $2 : the comma delimited list of blacklisted IOMMU groups.
+  #
+  function selection_src_get_vfio_iommu_groups
+  {
+    if is_string "${2}" \
+      && ! [[ "${2}" =~ "${IOMMU_GROUP_REGEX}" ]] \
+      && ! [[ "${2}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
+      print_error_to_log "Invalid blacklisted IOMMU groups."
+      return 2
+    fi
+
+    if ! remove_range \
+        "${DELIMITER}" \
+        "${1}" \
+        "${2}"; then
+      return 1
+    fi
+
+    return 0
+  }
+
+  #
   # $1 : true/false enable verbosity.
   # $2 : true/false skip prompt.
   # $3 : the comma delimited list of blacklisted IOMMU groups as a reference.
@@ -204,14 +260,14 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
 
     local do_enable_verbosity="${1}"
     local do_skip_prompt="${2}"
-    local -n blacklisted_iommu_groups_ref="${3}"
+    local -n blacklisted_iommu_groups_delim_ref="${3}"
 
     local error="Invalid blacklisted IOMMU groups."
     local verbose_error="Please enter a comma-delimited list of positive integers."
 
-    if is_string "${blacklisted_iommu_groups_ref}" \
-      && ! [[ "${blacklisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
-      && ! [[ "${blacklisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
+    if is_string "${blacklisted_iommu_groups_delim_ref}" \
+      && ! [[ "${blacklisted_iommu_groups_delim_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
+      && ! [[ "${blacklisted_iommu_groups_delim_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
       print_error_to_log "${error}"
 
       if "${do_enable_verbosity}"; then
@@ -235,9 +291,9 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
           "Enter a comma-delimited list of blacklisted IOMMU groups: "
       fi
 
-      read blacklisted_iommu_groups_ref
+      read blacklisted_iommu_groups_delim_ref
 
-      if ! is_string "${blacklisted_iommu_groups_ref}"; then
+      if ! is_string "${blacklisted_iommu_groups_delim_ref}"; then
         do_skip_prompt=true
       fi
 
@@ -249,8 +305,8 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
         return 0
       fi
 
-      if [[ "${blacklisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
-        || [[ "${blacklisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
+      if [[ "${blacklisted_iommu_groups_delim_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
+        || [[ "${blacklisted_iommu_groups_delim_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
         print_output_to_log "Validated blacklisted IOMMU groups."
         return 0
       fi
@@ -280,14 +336,14 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
 
     local do_enable_verbosity="${1}"
     local do_skip_prompt="${2}"
-    local -n whitelisted_iommu_groups_ref="${3}"
+    local -n whitelisted_iommu_groups_delim_ref="${3}"
 
     local error="Invalid whitelisted IOMMU groups."
     local verbose_error="Please enter a comma-delimited list of positive integers."
 
-    if is_string "${whitelisted_iommu_groups_ref}" \
-      && ! [[ "${whitelisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
-      && ! [[ "${whitelisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
+    if is_string "${whitelisted_iommu_groups_delim_ref}" \
+      && ! [[ "${whitelisted_iommu_groups_delim_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
+      && ! [[ "${whitelisted_iommu_groups_delim_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
       print_error_to_log "${error}"
 
       if "${do_enable_verbosity}"; then
@@ -311,9 +367,9 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
           "Enter a comma-delimited list of whitelisted IOMMU groups: "
       fi
 
-      read whitelisted_iommu_groups_ref
+      read whitelisted_iommu_groups_delim_ref
 
-      if ! is_string "${whitelisted_iommu_groups_ref}"; then
+      if ! is_string "${whitelisted_iommu_groups_delim_ref}"; then
         do_skip_prompt=true
       fi
 
@@ -325,8 +381,8 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
         return 0
       fi
 
-      if [[ "${whitelisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
-        || [[ "${whitelisted_iommu_groups_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
+      if [[ "${whitelisted_iommu_groups_delim_ref}" =~ "${IOMMU_GROUP_REGEX}" ]] \
+        || [[ "${whitelisted_iommu_groups_delim_ref}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
         print_output_to_log "Validated whitelisted IOMMU groups."
         return 0
       fi
@@ -346,6 +402,29 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
   #region Hardware IDs
 
   #
+  # $1 : the comma delimited list of whitelisted devices' IDs as a reference.
+  # $2 : the comma delimited list of blacklisted devices' IDs.
+  #
+  function selection_src_get_vfio_hardware_ids
+  {
+    if is_string "${2}" \
+      && ! [[ "${2}" =~ "${HARDWARE_ID_REGEX}" ]] \
+      && ! [[ "${2}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
+      print_error_to_log "Invalid blacklisted devices' IDs."
+      return 2
+    fi
+
+    if ! remove_range \
+        "${DELIMITER}" \
+        "${1}" \
+        "${2}"; then
+      return 1
+    fi
+
+    return 0
+  }
+
+  #
   # $1 : true/false enable verbosity.
   # $2 : true/false skip prompt.
   # $3 : true/false use driver "vfio-pci" or "pci-stub".
@@ -363,7 +442,7 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
     local do_enable_verbosity="${1}"
     local do_skip_prompt="${2}"
     local do_use_vfio_pci="${3}"
-    local -n blacklisted_drivers_ref="${4}"
+    local -n blacklisted_hardware_ids_delim_ref="${4}"
 
     local placeholder_driver="vfio-pci"
 
@@ -376,9 +455,9 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
     local verbose_error="Please enter a comma-delimited list of colon-delimited"
     verbose_error+="strings of two, with alphanumeric text."
 
-    if is_string "${blacklisted_drivers_ref}" \
-      && ! [[ "${blacklisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
-      && ! [[ "${blacklisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+    if is_string "${blacklisted_hardware_ids_delim_ref}" \
+      && ! [[ "${blacklisted_hardware_ids_delim_ref}" =~ "${HARDWARE_ID_REGEX}" ]] \
+      && ! [[ "${blacklisted_hardware_ids_delim_ref}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
       print_error_to_log "${error}"
 
       if "${do_enable_verbosity}"; then
@@ -403,9 +482,9 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
           "Enter a comma-delimited list of blacklisted devices' IDs: "
       fi
 
-      read blacklisted_drivers_ref
+      read blacklisted_hardware_ids_delim_ref
 
-      if ! is_string "${blacklisted_drivers_ref}"; then
+      if ! is_string "${blacklisted_hardware_ids_delim_ref}"; then
         do_skip_prompt=true
       fi
 
@@ -417,8 +496,8 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
         return 0
       fi
 
-      if [[ "${blacklisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
-        || [[ "${blacklisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+      if [[ "${blacklisted_hardware_ids_delim_ref}" =~ "${HARDWARE_ID_REGEX}" ]] \
+        || [[ "${blacklisted_hardware_ids_delim_ref}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
         print_output_to_log "Validated blacklisted devices' IDs."
         return 0
       fi
@@ -448,15 +527,15 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
 
     local do_enable_verbosity="${1}"
     local do_skip_prompt="${2}"
-    local -n whitelisted_drivers_ref="${3}"
+    local -n whitelisted_hardware_ids_delim_ref="${3}"
 
     local error="Invalid whitelisted devices' IDs."
     local verbose_error="Please enter a comma-delimited list of colon-delimited"
     verbose_error+="strings of two, with alphanumeric text."
 
-    if is_string "${whitelisted_drivers_ref}" \
-      && ! [[ "${whitelisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
-      && ! [[ "${whitelisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+    if is_string "${whitelisted_hardware_ids_delim_ref}" \
+      && ! [[ "${whitelisted_hardware_ids_delim_ref}" =~ "${HARDWARE_ID_REGEX}" ]] \
+      && ! [[ "${whitelisted_hardware_ids_delim_ref}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
       print_error_to_log "${error}"
 
       if "${do_enable_verbosity}"; then
@@ -480,9 +559,9 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
           "Enter a comma-delimited list of whitelisted devices' IDs: "
       fi
 
-      read whitelisted_drivers_ref
+      read whitelisted_hardware_ids_delim_ref
 
-      if ! is_string "${whitelisted_drivers_ref}"; then
+      if ! is_string "${whitelisted_hardware_ids_delim_ref}"; then
         do_skip_prompt=true
       fi
 
@@ -494,8 +573,8 @@ WORD_DELIM_REGEX="^[a-zA-Z]+(,[a-zA-Z]+)*$"
         return 0
       fi
 
-      if [[ "${whitelisted_drivers_ref}" =~ "${WORD_REGEX}" ]] \
-        || [[ "${whitelisted_drivers_ref}" =~ "${WORD_DELIM_REGEX}" ]]; then
+      if [[ "${whitelisted_hardware_ids_delim_ref}" =~ "${HARDWARE_ID_REGEX}" ]] \
+        || [[ "${whitelisted_hardware_ids_delim_ref}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
         print_output_to_log "Validated whitelisted devices' IDs."
         return 0
       fi
