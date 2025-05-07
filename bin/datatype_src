@@ -426,7 +426,7 @@ function is_variable
 # $1 : the variable or enumerable as a reference.
 # $2 : the regex to match.
 #
-function reference_reference_has_match
+function reference_has_match
 {
   if ! is_string "${2}"; then
     return 2
@@ -477,7 +477,7 @@ function reference_reference_has_match
 # $1 : the variable or enumerable as a reference.
 # $2 : the regex to unmatch.
 #
-function reference_reference_has_unmatch
+function reference_has_unmatch
 {
   if ! is_string "${2}"; then
     return 2
@@ -522,6 +522,39 @@ function reference_reference_has_unmatch
   done
 
   return 0
+}
+
+#
+# $1 : the delimited string as a reference.
+# $2 : the delimiter.
+#
+function remove_unnecessary_delimiters
+{
+  if ! is_string "${1}"; then
+    echo "${1}"
+    return 2
+  fi
+
+  local delim="${1}"
+  local delimiter="${2}"
+
+  if [[ "${#delimiter}" != 1 ]]; then
+    echo "${1}"
+    return 2
+  fi
+
+  delim="${delim#${delimiter}}"
+  delim="${delim%${delimiter}}"
+
+    # Remove duplicate commas
+    delim="$( \
+      echo \
+        "${delim}" \
+      | sed \
+        "s/${delimiter}\+/${delimiter}/g" \
+    )"
+
+    echo "${delim}"
 }
 
 #
@@ -571,42 +604,6 @@ function remove_key
 }
 
 #
-# $1 : the enumerable as a reference.
-# $2 : the regex to match.
-#
-function remove_unmatch
-{
-  if ! is_enum "${1}"; then
-    return 2
-  fi
-
-  if ! is_string "${2}"; then
-    return 2
-  fi
-
-  local -n reference="${1}"
-  local regex="${2}"
-
-  if ! is_enum "${1}"; then
-    if ! [[ "${reference}" =~ "${regex}" ]]; then
-      return 1
-    fi
-
-    return 0
-  fi
-
-  for key in ${!reference[@]}; do
-    value=${reference["${key}"]}
-
-    if ! [[ "${value}" =~ "${regex}" ]]; then
-      unset "reference[${key}]"
-    fi
-  done
-
-  return 0
-}
-
-#
 # $1 : the first delimited enumerable as a reference.
 # $2 : the second enumerable.
 # $3 : the delimiter.
@@ -638,9 +635,45 @@ function remove_range
   IFS="${ifs}"
 
   for value in "${second_list[@]}"; do
-    reference_remove_range_first_delim="${reference_remove_range_first_delim//${delimiter},${value}/}"
+    reference_remove_range_first_delim="${reference_remove_range_first_delim//${delimiter}${value}/}"
     reference_remove_range_first_delim="${reference_remove_range_first_delim//${value}${delimiter}/}"
     reference_remove_range_first_delim="${reference_remove_range_first_delim//${value}}"
+  done
+
+  return 0
+}
+
+#
+# $1 : the enumerable as a reference.
+# $2 : the regex to match.
+#
+function remove_unmatch
+{
+  if ! is_enum "${1}"; then
+    return 2
+  fi
+
+  if ! is_string "${2}"; then
+    return 2
+  fi
+
+  local -n reference="${1}"
+  local regex="${2}"
+
+  if ! is_enum "${1}"; then
+    if ! [[ "${reference}" =~ "${regex}" ]]; then
+      return 1
+    fi
+
+    return 0
+  fi
+
+  for key in ${!reference[@]}; do
+    value=${reference["${key}"]}
+
+    if ! [[ "${value}" =~ "${regex}" ]]; then
+      unset "reference[${key}]"
+    fi
   done
 
   return 0
