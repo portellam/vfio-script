@@ -1,7 +1,8 @@
 # VFIO Script
 ### Development | v0.0.1
-Easily install, uninstall, or reinstall a hardware-passthrough (VFIO) setup on a
-Linux machine. Select from a dynamic, GRUB, or static setup.
+Easily and automate the install, uninstall, or reinstall of a
+hardware-passthrough (VFIO) setup on a Linux machine. Select from either
+a dynamic, GRUB, or static setup.
 
 #### View this repository on [Codeberg][01] or [GitHub][02].
 [01]: https://codeberg.org/portellam/vfio-script
@@ -195,6 +196,11 @@ sudo bash installer.sh
                                   "--pci-stub-ids".
 
                                   HWIDS is a comma delimited list of text.
+
+Examples:
+      --multiple-grub 3   Define a multiple of GRUB boot menu entries (as
+                          individual VFIO setups), multiplied by the three (3)
+                          kernels.
 ```
 
 #### 6.3. VFIO setups
