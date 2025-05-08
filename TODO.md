@@ -4,7 +4,7 @@
   - get IOMMU groups to exclude.
   - get non VGA groups' IDs, hardware IDs, and driver names.
 
-
+- [ ] warn user if `parse-iommu-devices` is missing. Instuct to install to continue, run manually, or choose another setup.
 
 
 - [ ] sanitize inputs.

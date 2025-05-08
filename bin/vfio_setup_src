@@ -3,7 +3,8 @@
 #
 # Project:        vfio-script
 # Filename:       vfio_setup_src
-# Description:    User interaction to select an available VFIO setup.
+# Description:    User interaction to select a VFIO setup and input device
+#                 information.
 # Author(s):      Alex Portell <github.com/portellam>
 # Maintainer(s):  Alex Portell <github.com/portellam>
 # Version:        0.0.1

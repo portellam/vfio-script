@@ -36,21 +36,12 @@ source \
 
   #endregion
 
-declare -g DELIM=","
 declare -g EXECUTABLE="parse-iommu-devices"
 
-# Regex for a comma delimited list of items (alphabet, hyphens,
-# underscores) with optional leading and/or optional trailing commas.
-declare -g DRIVER_DELIM_REGEX='^,*([a-zA-Z0-9_-]+)(,[a-zA-Z0-9_-]+)*,*$'
-
-# Regex for a comma delimited list of items (colon delimited list of two
-# items with four alphanumeric characters), with optional leading and/or
-# optional trailing commas.
-declare -g HARDWARE_ID_DELIM_REGEX='^(\s*,\s*|\s*([A-Za-z0-9]{4}:\s*[A-Za-z0-9]{4})\s*,\s*)*$'
-
-# Regex for a comma delimited list of positive integers (including zero), with
-# optional leading and/or optional trailing commas.
-declare -g IOMMU_GROUP_DELIM_REGEX='^,*([0-9]+)(,[0-9]+)*,*$'
+declare -g DELIMITER=","
+declare -g HARDWARE_ID_DELIM_REGEX="^(\s*$DELIMITER\s*|\s*([A-Za-z0-9]{4}:\s*[A-Za-z0-9]{4})\s*$DELIMITER\s*)*$"
+declare -g IOMMU_GROUP_DELIM_REGEX="^([0-9]+)($DELIMITER[0-9]+)*$"
+declare -g WORD_DELIM_REGEX="^[a-zA-Z]+($DELIMITER[a-zA-Z]+)*$"
 
 declare -g VFIO_PCI_DRIVER="vfio-pci"
 
@@ -77,10 +68,109 @@ declare -ga VIDEO_IOMMU_GROUP_LIST=()
 #region Logic
 
 #
+# DONE:
+# - replaced dependent logic with input param logic.
+# - added while loop.
+# TODO:
+# - remove unnecessary globals.
+# - move `parse-iommu-devices` logic into separate source file? or one function?
+#   - this will then call `grub_vfio_src_main` or `grub_vfio_src_write_most_grub` directly.
+# - move `destination_path` to `grub_vfio_src_write_most_grub`. Only location.
+#
+
+#
+# $1 : the whitespace delimited string of command lines.
+# $2 : true/false remove limits.
+# $@ : for a given permutation, repeat $3 => $6 indefinitely.
+# $3 : for a given permutation, the comma delimited list of excluded IOMMU groups.
+# $4 : for a given permutation, the comma delimited list of blacklisted drivers.
+# $5 : for a given permutation, true/false use driver "vfio-pci" or "pci-stub".
+# $6 : for a given permutation, the comma delimited string of device IDs.
+#
+function grub_vfio_src_main
+{
+
+  if ! is_string "${1}" \
+    || ! is_boolean "${2}"; then
+    return 2
+  fi
+
+  local cmdline_prefix="${1}"
+  cmdline_prefix="${cmdline_prefix//\"/}"
+  shift
+
+  local allow_unsafe="${2}"
+  shift
+
+  local -a driver_delim_list=()
+  local -a excluded_iommu_group_delim_list=()
+  local -a pci_stub_id_delim_list=()
+  local -a vfio_pci_id_delim_list=()
+
+  local -i index=1
+  local -i max_index="${SAFE_MAX}"
+
+  if "${allow_unsafe}"; then
+    max_index=128
+  fi
+
+  while [[ "${index}" -le "${max_index}" ]]; do
+    if [[ "${1}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
+      excluded_iommu_group_delim_list+=( "${1}" )
+
+    elif [[ "${1}" =~ "${WORD_DELIM_REGEX}" ]]; then
+      driver_delim_list+=( "${1}" )
+
+    elif is_boolean "${1}"; then
+      local do_use_vfio_pci="${1}"
+      shift
+
+      if ! [[ "${1}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
+        continue
+      fi
+
+      if "${do_use_vfio_pci}"; then
+        pci_stub_id_delim_list+=( "" )
+        vfio_pci_id_delim_list+=( "${1}" )
+      else
+        pci_stub_id_delim_list+=( "${1}" )
+        vfio_pci_id_delim_list+=( "" )
+      fi
+
+    elif is_string "${1}"; then
+      print_error_to_log "Invalid input."
+      return 2
+
+    else
+      break
+    fi
+
+    shift
+    (( index++ ))
+  done
+
+  if ! grub_vfio_src_get_kernel_cmdline_iommu_driver; then
+    return 1
+  fi
+
+  local destination_path="/etc/grub.d/40_custom"
+
+  if ! grub_vfio_src_write_most_grub \
+      "${cmdline_prefix}" \
+      "${destination_path}" \
+    || ! grub_vfio_src_update_grub; then
+    print_fail_to_log "Failed to install a GRUB VFIO setup."
+    return 1
+  fi
+
+  print_pass_to_log "Installed a GRUB VFIO setup."
+}
+
+#
 # $1 : the whitespace delimited string of command lines.
 # $2 : the comma delimited list of IOMMU groups to exclude.
 #
-function grub_vfio_src_main
+function grub_vfio_src_main_old
 {
   local cmdline_prefix="${1}"
 
@@ -174,7 +264,7 @@ function grub_vfio_src_get_non_video_delims
   fi
 
   local video_iommu_group_delim=$( \
-    IFS=${DELIM}; \
+    IFS=${DELIMITER}; \
     echo "${VIDEO_IOMMU_GROUP_LIST[*]}" \
   )
 
@@ -395,7 +485,7 @@ function grub_vfio_src_write_most_grub
     | grep \
       "${disk}" \
     | cut \
-      --delimiter "${DELIM}" \
+      --delimiter "${DELIMITER}" \
       --fields 2 \
   )
 
@@ -407,7 +497,7 @@ function grub_vfio_src_write_most_grub
     | grep \
       "${disk}" \
     | cut \
-      --delimiter "${DELIM}" \
+      --delimiter "${DELIMITER}" \
       --fields 2 \
   )
 
