@@ -347,17 +347,16 @@ function option_src_parse_option_with_argument
   return 0
 }
 
-
 #
-# $1 : the long option with an argument.
-# $2 : the whitespace prefix.
-# $3 : the whitespace buffer.
+# $1 : the whitespace prefix.
+# $2 : the whitespace buffer.
+# $3 : the long option with an argument.
 #
 function option_src_print_argument_and_description
 {
-  local long_option="${1}"
-  local whitespace_prefix="${2}"
-  local whitespace_buffer="${3}"
+  local whitespace_prefix="${1}"
+  local whitespace_buffer="${2}"
+  local long_option="${3}"
 
   if ! [[ " ${LONG_OPTION_LIST[*]} " == *" ${long_option} "* ]] \
     && ! [[ " ${ARGUMENT_AND_LONG_OPTION_DICT[*]} " == *" ${long_option} "* ]]; then
@@ -374,23 +373,21 @@ function option_src_print_argument_and_description
 
     local argument="${ARGUMENT_AND_LONG_OPTION_DICT["${long_option}"]}"
     local -a description="${ARGUMENT_AND_DESCRIPTION_DICT["${long_option}"]}"
+    IFS=$'\n' read -rd '' -a lines <<< "$description"
 
     echo \
       -e \
-      "\n${whitespace_prefix}${argument}${whitespace_buffer}${description[0]}"
+      -n \
+      "${whitespace_prefix}${short_option}--${long_option}${whitespace_buffer}"\
+      "${lines[0]}\n"
 
-    unset description[0]
+    unset lines[0]
 
-    for line in "${description[@]}"; do
+    for line in "${lines[@]}"; do
       echo \
         -e \
-        "${whitespace_prefix}${whitespace_buffer}${line}"
-    done
-
-    for line in "${description[@]}"; do
-      echo \
-      -e \
-      "${whitespace_prefix}${whitespace_buffer}${line}"
+        -n \
+        "\t\t\t${whitespace_prefix}${whitespace_buffer}${line}\n"
     done
   done
 
@@ -398,15 +395,33 @@ function option_src_print_argument_and_description
 }
 
 #
-# $1 : the long option with an argument.
-# $2 : the whitespace prefix.
-# $3 : the whitespace buffer.
+# $1 : the whitespace prefix.
+# $2 : the whitespace buffer.
+# $@ : the long options.
 #
-function option_src_print_option_and_description
+function option_src_print_many_option_and_description
 {
-  local long_option="${1}"
-  local whitespace_prefix="${2}"
-  local whitespace_buffer="${3}"
+  local whitespace_prefix="${1}"
+  local whitespace_buffer="${2}"
+
+  for long_option in "${@}"; do
+    option_src_print_this_option_and_description \
+      "${whitespace_prefix}" \
+      "${whitespace_buffer}" \
+      "${long_option}"
+  done
+}
+
+#
+# $1 : the whitespace prefix.
+# $2 : the whitespace buffer.
+# $3 : the long option with an argument.
+#
+function option_src_print_this_option_and_description
+{
+  local whitespace_prefix="${1}"
+  local whitespace_buffer="${2}"
+  local long_option="${3}"
 
   if ! [[ " ${LONG_OPTION_LIST[*]} " == *" ${long_option} "* ]]; then
     echo
@@ -431,16 +446,21 @@ function option_src_print_option_and_description
     fi
   fi
 
+  IFS=$'\n' read -rd '' -a lines <<< "$full_description"
+
   echo \
     -e \
-    "${whitespace_prefix}${short_option}--${long_option}${whitespace_buffer}${full_description[0]}"
+    -n \
+    "${whitespace_prefix}${short_option}--${long_option}${whitespace_buffer}"\
+    "${lines[0]}\n"
 
-  unset full_description[0]
+  unset lines[0]
 
-  for line in "${full_description[@]}"; do
+  for line in "${lines[@]}"; do
     echo \
       -e \
-      "${whitespace_prefix}${whitespace_buffer}${line}"
+      -n \
+      "\t\t\t${whitespace_prefix}${whitespace_buffer}${line}\n"
   done
 
   option_src_print_argument_and_description \
@@ -455,87 +475,59 @@ function option_src_print_usage
 {
   echo \
     -e \
+    -n \
     "Usage:\t${SCRIPT_NAME} ARGS"\
-    "\nVersion ${SCRIPT_VERSION}"\
-    "\n"
+    "\nEasily automate the install or uninstall of a hardware-passthrough"\
+    "(VFIO) setup on a Linux machine. Select from either a dynamic, GRUB, or"\
+    "static setup."\
+    "\nVersion ${SCRIPT_VERSION}"
 
-  option_src_print_option_and_description \
+  option_src_print_many_option_and_description \
+    "\t" \
+    "\t" \
     "help" \
-    "\t" \
-    "\t"
-
-  option_src_print_option_and_description \
     "override" \
-    "\t" \
-    "\t"
-
-  option_src_print_option_and_description \
-    "verbose" \
-    "\t" \
-    "\t"
+    "verbose"
 
   echo \
     -e \
     "VFIO setup options:\n"
 
-  option_src_print_option_and_description \
-    "dynamic-vfio" \
+  option_src_print_this_option_and_description \
     "\t" \
-    "\t"
-
-  option_src_print_option_and_description \
-    "multi-vfio" \
     "\t" \
-    "\t\t"
+    "dynamic-vfio"
 
-  option_src_print_option_and_description \
+  option_src_print_this_option_and_description \
+    "\t" \
+    "\t\t" \
+    "multi-vfio"
+
+  option_src_print_many_option_and_description \
+    "\t" \
+    "\t" \
     "static-vfio" \
-    "\t" \
-    "\t"
-
-  option_src_print_option_and_description \
-    "uninstall-vfio" \
-    "\t" \
-    "\t"
+    "uninstall-vfio"
 
   echo \
     -e \
-    "Supplemental options:\n"
+    -n \
+    "Supplemental options:"
 
-  option_src_print_option_and_description \
+  option_src_print_many_option_and_description \
+    "\t" \
+    "\t\t" \
     "cmdline" \
-    "\t" \
-    "\t\t"
+    "drivers"
 
-  option_src_print_option_and_description \
-    "drivers" \
+  option_src_print_many_option_and_description \
     "\t" \
-    "\t\t"
-
-  option_src_print_option_and_description \
+    "\t" \
     "hardware-ids" \
-    "\t" \
-    "\t"
-
-  option_src_print_option_and_description \
     "iommu-groups" \
-    "\t" \
-    "\t"
-
-  option_src_print_option_and_description \
     "ignore-drivers" \
-    "\t" \
-    "\t"
-
-  option_src_print_option_and_description \
     "ignore-hardware-ids" \
-    "\t" \
-    "\t"
-
-  option_src_print_option_and_description \
-    "ignore-iommu-groups" \
-    "\t" \
-    "\t"
+    "ignore-iommu-groups"
 }
 
 #endregion
