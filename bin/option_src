@@ -45,189 +45,122 @@ declare RECOMMENDED_SCRIPT="auto-xorg"
 
 declare DELIMITER=','
 
-  #region options
+declare -ag LONG_OPTION_LIST=(
+  "${!LONG_OPTION_WITHOUT_ARGUMENT_DICT[*]}"
+  "${!LONG_OPTION_WITH_ARGUMENT_DICT[*]}"
+)
 
-  declare -Ag LONG_OPTION_WITHOUT_ARGUMENT_DICT=(
-    #region generic
+declare -Ag ARGUMENT_AND_DESCRIPTION_DICT=()
+declare -Ag ARGUMENT_AND_LONG_OPTION_DICT=()
+declare -Ag LONG_AND_SHORT_OPTION_DICT=()
+declare -Ag LONG_OPTION_AND_REGEX_DICT=()
+declare -ag LONG_OPTION_AND_DESCRIPTION_DICT=()
+declare -Ag LONG_OPTION_AND_VALUE_TYPE_DICT=()
+declare -Ag LONG_OPTION_WITH_ARGUMENT_DICT=()
+declare -Ag LONG_OPTION_WITHOUT_ARGUMENT_DICT=()
+declare -Ag VALUE_TYPE_AND_DESCRIPTION_DICT=()
 
-    ["help"]=false
-    ["verbose"]=false
+  #region generic
 
-    #endregion
+  LONG_AND_SHORT_OPTION_DICT["help"]="h"
+  LONG_OPTION_AND_DESCRIPTION_DICT["help"]="Print this help and exit."
+  LONG_OPTION_WITHOUT_ARGUMENT_DICT["help"]=false
 
-    #region supplmental
-
-    ["override"]=false
-
-    #endregion
-
-    #region VFIO
-
-    ["dynamic-vfio"]=false
-    ["uninstall-vfio"]=false
-
-    #endregion
-  )
-
-  declare -Ag LONG_OPTION_WITH_ARGUMENT_DICT=(
-    #region supplemental
-
-    ["cmdline"]=""
-    ["drivers"]=""
-    ["hardware-ids"]=""
-    ["iommu-groups"]=""
-
-    ["ignore-drivers"]=""
-    ["ignore-hardware-ids"]=""
-    ["ignore-iommu-groups"]=""
-
-    #endregion
-
-    #region VFIO
-
-    ["multi-vfio"]=""
-    ["static-vfio"]=""
-
-    #endregion
-  )
-
-  declare -ag LONG_OPTION_LIST=(
-    "${!LONG_OPTION_WITHOUT_ARGUMENT_DICT[*]}"
-    "${!LONG_OPTION_WITH_ARGUMENT_DICT[*]}"
-  )
-
-  declare -Ag LONG_AND_SHORT_OPTION_DICT=()
-  declare -Ag LONG_OPTION_AND_REGEX_DICT=()
-
-    #region generic
-
-    LONG_AND_SHORT_OPTION_DICT["help"]="h"
-    LONG_AND_SHORT_OPTION_DICT["verbose"]="v"
-
-    #endregion
-
-    #region supplmental
-
-    LONG_AND_SHORT_OPTION_DICT["cmdline"]="c"
-    LONG_OPTION_AND_REGEX_DICT["cmdline"]='[^"]*'
-
-    LONG_AND_SHORT_OPTION_DICT["drivers"]="d"
-    LONG_OPTION_AND_REGEX_DICT["drivers"]="^[a-zA-Z]+(${DELIMITER}[a-zA-Z]+)*$"
-    LONG_OPTION_AND_REGEX_DICT["ignore-drivers"]="${LONG_OPTION_AND_REGEX_DICT["drivers"]}"
-
-    LONG_AND_SHORT_OPTION_DICT["hardware-ids"]="i"
-    LONG_OPTION_AND_REGEX_DICT["hardware-ids"]="^(\s*${DELIMITER}\s*|\s*([A-Za-z0-9]{4}:\s*[A-Za-z0-9]{4})\s*${DELIMITER}\s*)*$"
-    LONG_OPTION_AND_REGEX_DICT["ignore-hardware-ids"]="${LONG_OPTION_AND_REGEX_DICT["hardware-ids"]}"
-
-    LONG_AND_SHORT_OPTION_DICT["iommu-groups"]="g"
-    LONG_OPTION_AND_REGEX_DICT["iommu-groups"]="^([0-9]+)(${DELIMITER}[0-9]+)*$"
-    LONG_OPTION_AND_REGEX_DICT["ignore-iommu-groups"]="${LONG_OPTION_AND_REGEX_DICT["iommu-groups"]}"
-
-    LONG_AND_SHORT_OPTION_DICT["override"]="o"
-
-    #endregion
-
-    #region VFIO
-
-    LONG_AND_SHORT_OPTION_DICT["dynamic-vfio"]="D"
-
-    LONG_AND_SHORT_OPTION_DICT["multi-vfio"]="M"
-    LONG_OPTION_AND_REGEX_DICT["multi-vfio"]='^(?!0)\d+$'
-
-    LONG_AND_SHORT_OPTION_DICT["static-vfio"]="S"
-    LONG_OPTION_AND_REGEX_DICT["static-vfio"]='(?i)^(grub|conf)$'
-
-    #endregion
+  LONG_AND_SHORT_OPTION_DICT["verbose"]="v"
+  LONG_OPTION_AND_DESCRIPTION_DICT["verbose"]="Show more output."
+  LONG_OPTION_WITHOUT_ARGUMENT_DICT["verbose"]=false
 
   #endregion
 
-  #region usage
+  #region supplemental
 
-  declare -Ag ARGUMENT_AND_DESCRIPTION_DICT=(
-    ["conf"]="Write to various configuration files."
-    ["grub"]="Write to GRUB."
+  ARGUMENT_AND_DESCRIPTION_DICT["prefer-stub-driver"]="Blacklist devices' with the older \"pci-stub\" driver instead of the \"vfio-pci\" driver.\nNote: not recommended as lower power states are not managed by the Host machine. Useful for stubborn devices."
+  ARGUMENT_AND_LONG_OPTION_DICT["prefer-stub-driver"]="hardware-ids"
 
-    ["prefer-stub-driver"]="Blacklist devices' with the older \"pci-stub\" driver instead of the \"vfio-pci\" driver.\nNote: not recommended as lower power states are not managed by the Host machine. Useful for stubborn devices."
-  )
+  LONG_AND_SHORT_OPTION_DICT["cmdline"]="c"
+  LONG_OPTION_AND_REGEX_DICT["cmdline"]='[^"]*'
+  LONG_OPTION_AND_VALUE_TYPE_DICT["cmdline"]="COMMANDS"
+  LONG_OPTION_AND_DESCRIPTION_DICT["cmdline"]="Define the GRUB command line.\nNote: avoid escape characters, such as double-quote (\") and/or VFIO commands so as to prevent conflicts."
+  LONG_OPTION_WITH_ARGUMENT_DICT["cmdline"]=""
 
-  declare -Ag ARGUMENT_AND_LONG_OPTION_DICT=(
-    ["conf"]="static-vfio"
-    ["grub"]="static-vfio"
-    ["prefer-stub-driver"]="hardware-ids"
-  )
+  LONG_AND_SHORT_OPTION_DICT["drivers"]="d"
+  LONG_OPTION_AND_REGEX_DICT["drivers"]="^[a-zA-Z]+(${DELIMITER}[a-zA-Z]+)*$"
+  LONG_OPTION_AND_VALUE_TYPE_DICT["drivers"]="DRIVERS"
+  LONG_OPTION_AND_DESCRIPTION_DICT["drivers"]="Specify which devices' drivers to override."
+  LONG_OPTION_WITH_ARGUMENT_DICT["drivers"]=""
 
-  declare -ag LONG_OPTION_AND_DESCRIPTION_DICT=(
-    #region generic
+  LONG_OPTION_AND_REGEX_DICT["ignore-drivers"]="${LONG_OPTION_AND_REGEX_DICT["drivers"]}"
+  LONG_OPTION_AND_DESCRIPTION_DICT["ignore-drivers"]="Specify which devices' drivers to not override."
+  LONG_OPTION_WITH_ARGUMENT_DICT["ignore-drivers"]=""
 
-    ["help"]="Print this help and exit."
-    ["verbose"]="Show more output."
+  LONG_AND_SHORT_OPTION_DICT["hardware-ids"]="i"
+  LONG_OPTION_AND_REGEX_DICT["hardware-ids"]="^(\s*${DELIMITER}\s*|\s*([A-Za-z0-9]{4}:\s*[A-Za-z0-9]{4})\s*${DELIMITER}\s*)*$"
+  LONG_OPTION_AND_VALUE_TYPE_DICT["hardware-ids"]="IDS"
+  LONG_OPTION_AND_DESCRIPTION_DICT["hardware-ids"]="Specify which devices' IDs to blacklist."
+  LONG_OPTION_WITH_ARGUMENT_DICT["hardware-ids"]=""
 
-    #endregion
+  LONG_OPTION_AND_REGEX_DICT["ignore-hardware-ids"]="${LONG_OPTION_AND_REGEX_DICT["hardware-ids"]}"
+  LONG_OPTION_AND_DESCRIPTION_DICT["ignore-hardware-ids"]="Specify which devices' IDs to whitelist."
+  LONG_OPTION_WITH_ARGUMENT_DICT["ignore-hardware-ids"]=""
 
-    #region supplmental
+  LONG_AND_SHORT_OPTION_DICT["iommu-groups"]="g"
+  LONG_OPTION_AND_REGEX_DICT["iommu-groups"]="^([0-9]+)(${DELIMITER}[0-9]+)*$"
+  LONG_OPTION_AND_VALUE_TYPE_DICT["iommu-groups"]="GROUPS"
+  LONG_OPTION_AND_DESCRIPTION_DICT["iommu-groups"]="Specify which IOMMU groups may be reserved for any Guest machine."
+  LONG_OPTION_WITH_ARGUMENT_DICT["iommu-groups"]=""
 
-    ["cmdline"]="Define the GRUB command line.\nNote: avoid escape characters, such as double-quote (\") and/or VFIO commands so as to prevent conflicts."
+  LONG_OPTION_AND_REGEX_DICT["ignore-iommu-groups"]="${LONG_OPTION_AND_REGEX_DICT["iommu-groups"]}"
+  LONG_OPTION_AND_DESCRIPTION_DICT["ignore-iommu-groups"]="Specify which IOMMU groups may be reserved for the Host machine."
+  LONG_OPTION_WITH_ARGUMENT_DICT["ignore-iommu-groups"]=""
 
-    ["drivers"]="Specify which devices' drivers to override."
+  LONG_AND_SHORT_OPTION_DICT["override"]="o"
+  LONG_OPTION_AND_DESCRIPTION_DICT["override"]="Override safety limits. Override a maximum amount of permutations, and/or features which may repeat a given command many times.\nNote: safety limits are five (5) permutations/repeats each.\nNote: no prompt at runtime."
+  LONG_OPTION_WITHOUT_ARGUMENT_DICT["override"]=false
 
-    ["ignore-drivers"]="Specify which devices' drivers to not override."
+  #endregion
 
-    ["hardware-ids"]="Specify which devices' IDs to blacklist."
+  #region VFIO
 
-    ["ignore-hardware-ids"]="Specify which devices' IDs to whitelist."
+  ARGUMENT_AND_DESCRIPTION_DICT["conf"]="Write to various configuration files."
+  ARGUMENT_AND_LONG_OPTION_DICT["conf"]="static-vfio"
 
-    ["iommu-groups"]="Specify which IOMMU groups may be reserved for any Guest machine."
+  ARGUMENT_AND_DESCRIPTION_DICT["grub"]="Write to GRUB."
+  ARGUMENT_AND_LONG_OPTION_DICT["grub"]="static-vfio"
 
-    ["ignore-iommu-groups"]="Specify which IOMMU groups may be reserved for the Host machine."
+  LONG_AND_SHORT_OPTION_DICT["dynamic-vfio"]="D"
+  LONG_OPTION_AND_DESCRIPTION_DICT["dynamic-vfio"]="Define a temporary VFIO setup as a QEMU command line. Append to a Libvirt hook or a Guest machine configuration file. This VFIO setup may be created/destroyed on a Guest startup/shutdown."
+  LONG_OPTION_WITHOUT_ARGUMENT_DICT["dynamic-vfio"]=false
 
-    ["override"]="Override safety limits. Override a maximum amount of permutations, and/or features which may repeat a given command many times.\nNote: safety limits are five (5) permutations/repeats each.\nNote: no prompt at runtime."
+  LONG_AND_SHORT_OPTION_DICT["multi-vfio"]="M"
+  LONG_OPTION_AND_REGEX_DICT["multi-vfio"]='^(?!0)\d+$'
+  LONG_OPTION_AND_VALUE_TYPE_DICT["multi-vfio"]="KERNELS"
+  LONG_OPTION_AND_DESCRIPTION_DICT["multi-vfio"]="Define one or more persistent VFIO setup(s) as GRUB command line permutations\; setup(s) are defined as individual GRUB boot menu entries, where one permutation may be chosen at Host machine startup.\nNote: multiple GPUs on separate IOMMU groups will create multiple permutations.\nRequired executable(s): \"${MULTIPLE_VFIO_SCRIPT}\".\nOptional executable(s): \"${RECOMMENDED_SCRIPT}\"."
+  LONG_OPTION_WITH_ARGUMENT_DICT["multi-vfio"]=""
 
-    #endregion
+  LONG_AND_SHORT_OPTION_DICT["static-vfio"]="S"
+  LONG_OPTION_AND_REGEX_DICT["static-vfio"]='(?i)^(grub|conf)$'
+  LONG_OPTION_AND_VALUE_TYPE_DICT["static-vfio"]="ARGUMENTS"
+  LONG_OPTION_AND_DESCRIPTION_DICT["static-vfio"]="Define a persistent VFIO setup.\nOptional executable(s): \"${RECOMMENDED_SCRIPT}\"."
+  LONG_OPTION_WITH_ARGUMENT_DICT["static-vfio"]=""
 
-    #region VFIO
+  LONG_OPTION_AND_DESCRIPTION_DICT["uninstall-vfio"]="Uninstall persistent VFIO setup(s)."
+  LONG_OPTION_WITHOUT_ARGUMENT_DICT["uninstall-vfio"]=false
 
-    ["dynamic-vfio"]="Define a temporary VFIO setup as a QEMU command line. Append to a Libvirt hook or a Guest machine configuration file. This VFIO setup may be created/destroyed on a Guest startup/shutdown."
+  #endregion
 
-    ["multi-vfio"]="Define one or more persistent VFIO setup(s) as GRUB command line permutations\; setup(s) are defined as individual GRUB boot menu entries, where one permutation may be chosen at Host machine startup.\nNote: multiple GPUs on separate IOMMU groups will create multiple permutations.\nRequired executable(s): \"${MULTIPLE_VFIO_SCRIPT}\".\nOptional executable(s): \"${RECOMMENDED_SCRIPT}\"."
+  #region value types
 
-    ["static-vfio"]="Define a persistent VFIO setup.\nOptional executable(s): \"${RECOMMENDED_SCRIPT}\"."
+  VALUE_TYPE_AND_DESCRIPTION_DICT["ARGUMENTS"]="ARGUMENTS is the argument(s) for a given option."
 
-    ["uninstall-vfio"]="Uninstall persistent VFIO setup(s)."
+  VALUE_TYPE_AND_DESCRIPTION_DICT["COMMANDS"]="COMMANDS is a whitespace-delimited list of command line arguments."
 
-    #endregion
-  )
+  VALUE_TYPE_AND_DESCRIPTION_DICT["DRIVERS"]="DRIVERS is a comma-delimited list of devices' driver names."
 
-  declare -Ag LONG_OPTION_AND_VALUE_TYPE_DICT=(
-    #region supplemental
+  VALUE_TYPE_AND_DESCRIPTION_DICT["GROUPS"]="GROUPS is a comma-delimited list of positive numbers.\nNote: to use all except pre-selected groups, do not use this option."
 
-    ["cmdline"]="COMMANDS"
-    ["drivers"]="DRIVERS"
-    ["hardware-ids"]="IDS"
-    ["iommu-groups"]="GROUPS"
+  VALUE_TYPE_AND_DESCRIPTION_DICT["IDS"]="IDS is a comma delimited list of devices' IDs."
 
-    #endregion
-
-    #region VFIO
-
-    ["multi-vfio"]="KERNELS"
-    ["static-vfio"]="ARGUMENTS"
-
-    #endregion
-  )
-
-  declare -Ag VALUE_TYPE_AND_DESCRIPTION_DICT=(
-    ["ARGUMENTS"]="ARGUMENTS is the argument(s) for a given option."
-
-    ["COMMANDS"]="COMMANDS is a whitespace-delimited list of command line arguments."
-
-    ["DRIVERS"]="DRIVERS is a comma-delimited list of devices' driver names."
-
-    ["GROUPS"]="GROUPS is a comma-delimited list of positive numbers.\nNote: to use all except pre-selected groups, do not use this option."
-
-    ["IDS"]="IDS is a comma delimited list of devices' IDs."
-
-    ["KERNELS"]="KERNELS is a comma-delimited list of positive non-zero numbers representing selected kernel(s); multiply the permutations by the number of available kernel(s) to be used (sorted newest to oldest).\nNote: to use all available, input '0'."
-  )
+  VALUE_TYPE_AND_DESCRIPTION_DICT["KERNELS"]="KERNELS is a comma-delimited list of positive non-zero numbers representing selected kernel(s); multiply the permutations by the number of available kernel(s) to be used (sorted newest to oldest).\nNote: to use all available, input '0'."
 
   #endregion
 
