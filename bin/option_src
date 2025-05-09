@@ -1,0 +1,305 @@
+#!/bin/false
+
+#
+# Project:        vfio-script
+# Filename:       option_src
+# Description:    Argument logic.
+# Author(s):      Alex Portell <github.com/portellam>
+# Maintainer(s):  Alex Portell <github.com/portellam>
+# Version:        0.0.1
+#
+
+#region Sources (1/2)
+
+declare -g SOURCE_PATH="${1}"
+source "${SOURCE_PATH}datatype_src"
+
+#endregion
+
+#region Parameters
+
+shopt -s nullglob   # aid with argument inputs.
+
+if ! is_string "${2}"; then
+  exit 1
+fi
+
+if ! is_string "${3}"; then
+  exit 1
+fi
+
+declare -g SCRIPT_NAME="${2}"
+declare -g SCRIPT_VERSION="${3}"
+declare -gi COLUMN_SIZE="$( tput cols )"
+
+#
+# TODO:
+# - [ ] write booleans to log when a function is successful or not.
+#   - use these to track where exactly some task failed, and what completed.
+#   - undo completed tasks, and notify of failed task.
+#
+
+
+#region traps
+
+set -E    #NOTE: force `trap ERR` to be inherited.
+
+trap \
+  trap_any_exit \
+  EXIT
+
+trap \
+  trap_any_error \
+  ERR
+
+#endregion
+
+#region sources
+#endregion
+
+#region global parameters
+
+declare SCRIPT_NAME="vfio-script"
+declare DELIMITER=','
+
+declare -ag LONG_OPTION_WITHOUT_ARGUMENT_DICT=(
+  #region generic
+
+  ["help"]=false,
+  ["verbose"]=false,
+
+  #endregion
+
+  #region supplmental
+
+  ["override"]=false,
+
+  #endregion
+
+  #region VFIO
+
+  ["dynamic-vfio"]=false,
+
+  #endregion
+)
+
+declare -Ag LONG_OPTION_WITH_ARGUMENT_DICT=(
+  #region supplemental
+
+  ["cmdline"]="",
+  ["drivers"]="",
+  ["iommu-groups"]="",
+  ["hardware-ids"]="",
+
+  #endregion
+
+  #region VFIO
+
+  ["multi-vfio"]="",
+  ["static-vfio"]="",
+
+  #endregion
+)
+
+declare -Ag LONG_AND_SHORT_OPTION_DICT=()
+declare -Ag LONG_OPTION_AND_REGEX_DICT=()
+
+  #region generic
+
+  LONG_AND_SHORT_OPTION_DICT["help"]="h"
+
+  #endregion
+
+  #region supplmental
+
+  LONG_AND_SHORT_OPTION_DICT["cmdline"]="c"
+  LONG_OPTION_AND_REGEX_DICT["cmdline"]='[^"]*'
+
+  LONG_AND_SHORT_OPTION_DICT["drivers"]="d"
+  LONG_OPTION_AND_REGEX_DICT["drivers"]="^[a-zA-Z]+(${DELIMITER}[a-zA-Z]+)*$"
+
+  LONG_AND_SHORT_OPTION_DICT["hardware-ids"]="i"
+  LONG_OPTION_AND_REGEX_DICT["hardware-ids"]="^(\s*${DELIMITER}\s*|\s*([A-Za-z0-9]{4}:\s*[A-Za-z0-9]{4})\s*${DELIMITER}\s*)*$"
+
+  LONG_AND_SHORT_OPTION_DICT["iommu-groups"]="g"
+  LONG_OPTION_AND_REGEX_DICT["iommu-groups"]="^([0-9]+)(${DELIMITER}[0-9]+)*$"
+
+  LONG_AND_SHORT_OPTION_DICT["override"]="o"
+
+  #endregion
+
+  #region VFIO
+
+  LONG_AND_SHORT_OPTION_DICT["dynamic-vfio"]="D"
+
+  LONG_AND_SHORT_OPTION_DICT["multi-vfio"]="M"
+  LONG_OPTION_AND_REGEX_DICT["multi-vfio"]='^(?!0)\d+$'
+
+  LONG_AND_SHORT_OPTION_DICT["static-vfio"]="S"
+  LONG_OPTION_AND_REGEX_DICT["static-vfio"]='(?i)^(grub|conf)$'
+
+  #endregion
+
+#endregion
+
+#region logic
+
+function trap_any_exit
+{
+  #TODO: develop.
+  echo
+}
+
+function trap_any_error
+{
+  #TODO: develop.
+  echo
+}
+
+function src_clean_up
+{
+  #TODO: develop.
+  echo
+}
+
+#
+# $@ : the options and arguments.
+#
+function src_parse_options
+{
+  #region getopt arguments setup
+
+  long_options_delimited=""
+  short_options_delimited=""
+
+  for value in "${!LONG_OPTION_WITH_ARGUMENT_DICT[@]}"; do
+    long_options_delimited+="${value}:,"
+    short_options_delimited+="${value}:"
+  done
+
+  for value in "${!LONG_OPTION_WITHOUT_ARGUMENT_DICT[@]}"; do
+    long_options_delimited+="${value},"
+    short_options_delimited+="${value}"
+  done
+
+  if [[ "${long_options_delimited: -1}" = "," ]]; then
+    long_options_delimited="${long_options_delimited%?}"
+  fi
+
+  if [[ "${short_options_delimited: -1}" = "," ]]; then
+    short_options_delimited="${short_options_delimited%?}"
+  fi
+
+  #endregion
+
+  var=$( \
+    getopt \
+      --longoptions "${long_options_delimited}" \
+      --options "${short_options_delimited}" \
+      --name "${SCRIPT_NAME}" \
+      -- "${@}" \
+  )
+
+  if [[ ${?} -ne 0 ]]; then
+    echo \
+      -e \
+      "Failed to parse options." \
+      >&2
+
+    exit 1
+  fi
+
+  eval \
+    set \
+    -- \
+    "${var}"
+
+  while true; do
+    local long_option="$( src_parse_get_long_option "${1}" )"
+
+    if [[ ${?} -ne 0 ]]; then
+      echo \
+        "Unexpected option: ${long_option}" \
+        >&2
+
+      exit 1
+    fi
+
+    local argument="${2}"
+
+    if src_parse_option_with_argument \
+        "${long_option}" \
+        "${argument}" \
+        &> /dev/null; then
+      shift 2
+
+    elif [[ "${long_option}" =~ "${!LONG_OPTION_WITHOUT_ARGUMENT_DICT[*]}" ]]; then
+      LONG_OPTION_WITHOUT_ARGUMENT_DICT["${long_option}"]="true"
+      shift 1
+
+    elif [[ "${long_option}" == "" ]] \
+      || [[ "${long_option}" == "--" ]]; then
+      break
+
+    else
+      echo \
+        "Unexpected option: ${long_option}" \
+        >&2
+
+      return 1
+    fi
+  done
+
+  return 0
+}
+
+#
+# $1      : the short option.
+# returns : if short option is expected, return the long option.
+#
+function src_parse_get_long_option
+{
+  local long_option="${1}"
+
+  if [[ "${long_option}" =~ "${!LONG_OPTION_WITH_ARGUMENT_DICT[*]}" ]]; then
+    echo "${long_option}"
+    return 0
+  fi
+
+  local short_option="${1}"
+
+  if ! [[ "${short_option}" =~ "${LONG_AND_SHORT_OPTION_DICT[*]}" ]]; then
+    return 1
+  fi
+
+  long_option="${LONG_AND_SHORT_OPTION_DICT["${1}"]}"
+  echo "${long_option}"
+  return 0
+}
+
+#
+# $1      : the long option with an argument.
+# $2      : the argument.
+# returns : if long option has argument and argument matches regex, return argument.
+#
+function src_parse_option_with_argument
+{
+  local long_option="${1}"
+  local argument="${2}"
+
+  if ! [[ "${long_option}" =~ "${!LONG_OPTION_WITH_ARGUMENT_DICT[*]}" ]]; then
+    return 0
+  fi
+
+  local regex="${LONG_OPTION_AND_REGEX_DICT["${long_option}"]}"
+
+  if ! [[ "${argument}" =~ ${regex} ]]; then
+    echo "Unexpected argument: ${argument}" >&2
+    return 1
+  fi
+
+  LONG_OPTION_WITH_ARGUMENT_DICT["${long_option}"]="${argument}"
+  echo "${argument}"
+  return 0
+}
+#endregion
