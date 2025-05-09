@@ -91,6 +91,11 @@ declare DELIMITER=','
     #endregion
   )
 
+  declare -ag LONG_OPTION_LIST=(
+    "${!LONG_OPTION_WITHOUT_ARGUMENT_DICT[*]}"
+    "${!LONG_OPTION_WITH_ARGUMENT_DICT[*]}"
+  )
+
   declare -Ag LONG_AND_SHORT_OPTION_DICT=()
   declare -Ag LONG_OPTION_AND_REGEX_DICT=()
 
@@ -141,10 +146,7 @@ declare DELIMITER=','
     ["conf"]="Write to various configuration files.",
     ["grub"]="Write to GRUB.",
 
-    ["prefer-stub-driver"]="Blacklist devices' with the older \"pci-stub\""\
-      "driver instead of the \"vfio-pci\" driver."\
-      "\nNote: not recommended as lower power states are not managed by the"\
-      " Host machine. Useful for stubborn devices.",
+    ["prefer-stub-driver"]="Blacklist devices' with the older \"pci-stub\" driver instead of the \"vfio-pci\" driver.\nNote: not recommended as lower power states are not managed by the Host machine. Useful for stubborn devices.",
   )
 
   declare -Ag ARGUMENT_AND_LONG_OPTION_DICT=(
@@ -163,9 +165,7 @@ declare DELIMITER=','
 
     #region supplmental
 
-    ["cmdline"]="Define the GRUB command line."\
-      "\nNote: avoid escape characters, such as double-quote (\") and/or VFIO"\
-      " commands so as to prevent conflicts.",
+    ["cmdline"]="Define the GRUB command line.\nNote: avoid escape characters, such as double-quote (\") and/or VFIO commands so as to prevent conflicts.",
 
     ["drivers"]="Specify which devices' drivers to override.",
 
@@ -175,39 +175,23 @@ declare DELIMITER=','
 
     ["ignore-hardware-ids"]="Specify which devices' IDs to whitelist.",
 
-    ["iommu-groups"]="Specify which IOMMU groups may be reserved for any Guest"\
-      " machine.",
+    ["iommu-groups"]="Specify which IOMMU groups may be reserved for any Guest machine.",
 
-    ["ignore-iommu-groups"]="Specify which IOMMU groups may be reserved for"\
-      " the Host machine.",
+    ["ignore-iommu-groups"]="Specify which IOMMU groups may be reserved for the Host machine.",
 
-    ["override"]="Override safety limits. Override a maximum amount of"\
-      " permutations, and/or features which may repeat a given command many"\
-      " times."\
-      "\nNote: safety limits are five (5) permutations/repeats each."\
-      "\nNote: no prompt at runtime.",
+    ["override"]="Override safety limits. Override a maximum amount of permutations, and/or features which may repeat a given command many times.\nNote: safety limits are five (5) permutations/repeats each.\nNote: no prompt at runtime.",
 
     #endregion
 
     #region VFIO
 
-    ["dynamic-vfio"]="Define a temporary VFIO setup as a QEMU command line."\
-      " Append to a Libvirt hook or a Guest machine configuration file. This"\
-      " VFIO setup may be created/destroyed on a Guest startup/shutdown.",
+    ["dynamic-vfio"]="Define a temporary VFIO setup as a QEMU command line. Append to a Libvirt hook or a Guest machine configuration file. This VFIO setup may be created/destroyed on a Guest startup/shutdown.",
 
-    ["multi-vfio"]="Define one or more persistent VFIO setup(s) as GRUB"\
-      " command line permutations; setup(s) are defined as individual GRUB"\
-      " boot menu entries, where one permutation may be chosen at Host machine"\
-      " startup."\
-      "\nNote: multiple GPUs on separate IOMMU groups will create multiple"\
-      "permutations.",
-      "\nRequired executable(s): \"${MULTIPLE_VFIO_SCRIPT}\".",
-      "\nOptional executable(s): \"${RECOMMENDED_SCRIPT}\".",
+    ["multi-vfio"]="Define one or more persistent VFIO setup\(s\) as GRUB command line permutations\; setup\(s\) are defined as individual GRUB boot menu entries, where one permutation may be chosen at Host machine startup.\nNote: multiple GPUs on separate IOMMU groups will create multiple permutations.\nRequired executable\(s\): \"${MULTIPLE_VFIO_SCRIPT}\".\nOptional executable\(s\): \"${RECOMMENDED_SCRIPT}\".",
 
-    ["static-vfio"]="Define a persistent VFIO setup.",
-      "\nOptional executable(s): \"${RECOMMENDED_SCRIPT}\".",
+    ["static-vfio"]="Define a persistent VFIO setup.\nOptional executable\(s\): \"${RECOMMENDED_SCRIPT}\".",
 
-    ["uninstall-vfio"]="Uninstall persistent VFIO setup(s).",
+    ["uninstall-vfio"]="Uninstall persistent VFIO setup\(s\).",
 
     #endregion
   )
@@ -233,21 +217,15 @@ declare DELIMITER=','
   declare -Ag VALUE_TYPE_AND_DESCRIPTION_DICT=(
     ["ARGUMENTS"]="ARGUMENTS is the argument(s) for a given option.",
 
-    ["COMMANDS"]="COMMANDS is a whitespace-delimited list of command line"\
-      " arguments.",
+    ["COMMANDS"]="COMMANDS is a whitespace-delimited list of command line arguments.",
 
     ["DRIVERS"]="DRIVERS is a comma-delimited list of devices' driver names.",
 
-    ["GROUPS"]="GROUPS is a comma-delimited list of positive numbers."\
-      "\nNote: to use all except pre-selected groups, do not use this option.",
+    ["GROUPS"]="GROUPS is a comma-delimited list of positive numbers.\nNote: to use all except pre-selected groups, do not use this option.",
 
     ["IDS"]="IDS is a comma delimited list of devices' IDs.",
 
-    ["KERNELS"]="KERNELS is a comma-delimited list of positive non-zero"\
-      " numbers representing selected kernel(s); multiply the permutations by"\
-      " the number of available kernel(s) to be used"\
-      " (sorted newest to oldest)."\
-      "\nNote: to use all available, input '0'.",
+    ["KERNELS"]="KERNELS is a comma-delimited list of positive non-zero numbers representing selected kernel(s); multiply the permutations by the number of available kernel(s) to be used (sorted newest to oldest).\nNote: to use all available, input '0'.",
   )
 
   #endregion
@@ -306,11 +284,11 @@ function option_src_parse_options
     short_options_delimited+="${value}"
   done
 
-  if [[ "${long_options_delimited: -1}" = "," ]]; then
+  if [[ "${long_options_delimited: -1}" == "," ]]; then
     long_options_delimited="${long_options_delimited%?}"
   fi
 
-  if [[ "${short_options_delimited: -1}" = "," ]]; then
+  if [[ "${short_options_delimited: -1}" == "," ]]; then
     short_options_delimited="${short_options_delimited%?}"
   fi
 
@@ -447,8 +425,8 @@ function option_src_print_argument_and_description
   local whitespace_prefix="${2}"
   local whitespace_buffer="${3}"
 
-  if ! [[ "${long_option}" =~ "${!LONG_OPTION_WITH_ARGUMENT_DICT[*]}" ]] \
-    || ! ! [[ "${long_option}" =~ "${ARGUMENT_AND_LONG_OPTION_DICT[*]}" ]]; then
+  if ! [[ "${LONG_OPTION_LIST[*]}" =~ "${long_option}" ]] \
+    && ! [[ "${ARGUMENT_AND_LONG_OPTION_DICT[*]}" =~ "${long_option}" ]]; then
     echo
     return 0
   fi
@@ -482,8 +460,7 @@ function option_src_print_option_and_description
   local whitespace_prefix="${2}"
   local whitespace_buffer="${3}"
 
-  if ! [[ "${long_option}" =~ "${!LONG_OPTION_WITH_ARGUMENT_DICT[*]}" ]] \
-    || ! ! [[ "${long_option}" =~ "${ARGUMENT_AND_LONG_OPTION_DICT[*]}" ]]; then
+  if ! [[ "${LONG_OPTION_LIST[*]}" =~ "${long_option}" ]]; then
     echo
     return 0
   fi
@@ -565,6 +542,8 @@ function option_src_print_usage
     "\nVersion ${SCRIPT_VERSION}"\
     "\n"
 
+  set -o xtrace
+
   option_src_print_option_and_description \
     "help" \
     "\t" \
@@ -642,6 +621,8 @@ function option_src_print_usage
     "ignore-iommu-groups" \
     "\t" \
     "\t"
+
+  set +o xtrace
 }
 
 #endregion
