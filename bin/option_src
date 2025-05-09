@@ -444,6 +444,8 @@ function option_src_parse_option_with_argument
 function option_src_print_argument_and_description
 {
   local long_option="${1}"
+  local whitespace_prefix="${2}"
+  local whitespace_buffer="${3}"
 
   if ! [[ "${long_option}" =~ "${!LONG_OPTION_WITH_ARGUMENT_DICT[*]}" ]] \
     || ! ! [[ "${long_option}" =~ "${ARGUMENT_AND_LONG_OPTION_DICT[*]}" ]]; then
@@ -451,12 +453,20 @@ function option_src_print_argument_and_description
     return 0
   fi
 
-  local argument="${ARGUMENT_AND_LONG_OPTION_DICT["${long_option}"]}"
-  local description="${ARGUMENT_AND_DESCRIPTION_DICT["${long_option}"]}"
+  for argument in "${!ARGUMENT_AND_LONG_OPTION_DICT[@]}"; do
+    local this_long_option="${ARGUMENT_AND_LONG_OPTION_DICT["${argument}"]}"
 
-  echo \
-    -e \
-    "${2}${argument}${3}${description}"
+    if [[ "${this_long_option}" != "${long_option}" ]]; then
+      continue
+    fi
+
+    local argument="${ARGUMENT_AND_LONG_OPTION_DICT["${long_option}"]}"
+    local description="${ARGUMENT_AND_DESCRIPTION_DICT["${long_option}"]}"
+
+    echo \
+      -e \
+      "\n${whitespace_prefix}${argument}${whitespace_buffer}${description}"
+  done
 
   return 0
 }
@@ -469,6 +479,8 @@ function option_src_print_argument_and_description
 function option_src_print_option_and_description
 {
   local long_option="${1}"
+  local whitespace_prefix="${2}"
+  local whitespace_buffer="${3}"
 
   if ! [[ "${long_option}" =~ "${!LONG_OPTION_WITH_ARGUMENT_DICT[*]}" ]] \
     || ! ! [[ "${long_option}" =~ "${ARGUMENT_AND_LONG_OPTION_DICT[*]}" ]]; then
@@ -490,15 +502,17 @@ function option_src_print_option_and_description
 
   echo \
     -e \
-    "${2}${argument}${3}${description}"
+    "\n${whitespace_prefix}${argument}${whitespace_buffer}${description}"
+
+  option_src_print_argument_and_description \
+    "${long_option}" \
+    "${whitespace_prefix}" \
+    "${whitespace_buffer}"
 
   return 0
 }
 
-#
-# DESC  : Does some cool shit maybe you didn't know.
-#
-function option_src_print_usage
+function option_src_print_usage_old
 {
   echo \
     -e \
@@ -538,6 +552,96 @@ function option_src_print_usage
     "\n${LONG_OPTION_AND_DESCRIPTION_DICT["ignore-iommu-groups"]}"\
     "\n"\
     "\n${LONG_OPTION_AND_DESCRIPTION_DICT["prefer-stub-driver"]}"
+}
+
+#
+# DESC  : Does some cool shit maybe you didn't know.
+#
+function option_src_print_usage
+{
+  echo \
+    -e \
+    "Usage:\t${SCRIPT_NAME} ARGS"\
+    "\nVersion ${SCRIPT_VERSION}"\
+    "\n"
+
+  option_src_print_option_and_description \
+    "help" \
+    "\t" \
+    "\t"
+
+  option_src_print_option_and_description \
+    "override" \
+    "\t" \
+    "\t"
+
+  option_src_print_option_and_description \
+    "verbose" \
+    "\t" \
+    "\t"
+
+  echo \
+    -e \
+    "\nVFIO setup options:"
+
+  option_src_print_option_and_description \
+    "dynamic-vfio" \
+    "\t" \
+    "\t"
+
+  option_src_print_option_and_description \
+    "multi-vfio" \
+    "\t" \
+    "\t"
+
+  option_src_print_option_and_description \
+    "static-vfio" \
+    "\t" \
+    "\t"
+
+  option_src_print_option_and_description \
+    "uninstall-vfio" \
+    "\t" \
+    "\t"
+
+  echo \
+    -e \
+    "\nSupplemental options:"
+
+  option_src_print_option_and_description \
+    "cmdline" \
+    "\t" \
+    "\t"
+
+  option_src_print_option_and_description \
+    "drivers" \
+    "\t" \
+    "\t"
+
+  option_src_print_option_and_description \
+    "hardware-ids" \
+    "\t" \
+    "\t"
+
+  option_src_print_option_and_description \
+    "iommu-groups" \
+    "\t" \
+    "\t"
+
+  option_src_print_option_and_description \
+    "ignore-drivers" \
+    "\t" \
+    "\t"
+
+  option_src_print_option_and_description \
+    "ignore-hardware-ids" \
+    "\t" \
+    "\t"
+
+  option_src_print_option_and_description \
+    "ignore-iommu-groups" \
+    "\t" \
+    "\t"
 }
 
 #endregion
