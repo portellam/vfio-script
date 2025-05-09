@@ -54,7 +54,7 @@ declare -Ag ARGUMENT_AND_DESCRIPTION_DICT=()
 declare -Ag ARGUMENT_AND_LONG_OPTION_DICT=()
 declare -Ag LONG_AND_SHORT_OPTION_DICT=()
 declare -Ag LONG_OPTION_AND_REGEX_DICT=()
-declare -ag LONG_OPTION_AND_DESCRIPTION_DICT=()
+declare -Ag LONG_OPTION_AND_DESCRIPTION_DICT=()
 declare -Ag LONG_OPTION_AND_VALUE_TYPE_DICT=()
 declare -Ag LONG_OPTION_WITH_ARGUMENT_DICT=()
 declare -Ag LONG_OPTION_WITHOUT_ARGUMENT_DICT=()
@@ -433,7 +433,7 @@ function option_src_print_option_and_description
 
   echo \
     -e \
-    "\n${whitespace_prefix}${short_option}--${long_option}${whitespace_buffer}${full_description[0]}"
+    "${whitespace_prefix}${short_option}--${long_option}${whitespace_buffer}${full_description[0]}"
 
   unset full_description[0]
 
@@ -451,51 +451,6 @@ function option_src_print_option_and_description
   return 0
 }
 
-function option_src_print_usage_old
-{
-  echo \
-    -e \
-    "Usage:\t${SCRIPT_NAME} ARGS"\
-    "\nVersion ${SCRIPT_VERSION}"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["help"]}"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["override"]}"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["verbose"]}"\
-    "\n"\
-    "\nVFIO setup options:"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["dynamic-vfio"]}"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["multi-vfio"]}"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["static-vfio"]}"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["uninstall-vfio"]}"\
-    "\n"\
-    "\nSupplemental options:"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["cmdline"]}"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["drivers"]}"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["hardware-ids"]}"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["iommu-groups"]}"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["ignore-drivers"]}"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["ignore-hardware-ids"]}"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["ignore-iommu-groups"]}"\
-    "\n"\
-    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["prefer-stub-driver"]}"
-}
-
-#
-# DESC  : Does some cool shit maybe you didn't know.
-#
 function option_src_print_usage
 {
   echo \
@@ -503,8 +458,6 @@ function option_src_print_usage
     "Usage:\t${SCRIPT_NAME} ARGS"\
     "\nVersion ${SCRIPT_VERSION}"\
     "\n"
-
-  # set -o xtrace
 
   option_src_print_option_and_description \
     "help" \
@@ -523,7 +476,7 @@ function option_src_print_usage
 
   echo \
     -e \
-    "\nVFIO setup options:"
+    "VFIO setup options:\n"
 
   option_src_print_option_and_description \
     "dynamic-vfio" \
@@ -533,7 +486,7 @@ function option_src_print_usage
   option_src_print_option_and_description \
     "multi-vfio" \
     "\t" \
-    "\t"
+    "\t\t"
 
   option_src_print_option_and_description \
     "static-vfio" \
@@ -547,17 +500,17 @@ function option_src_print_usage
 
   echo \
     -e \
-    "\nSupplemental options:"
+    "Supplemental options:\n"
 
   option_src_print_option_and_description \
     "cmdline" \
     "\t" \
-    "\t"
+    "\t\t"
 
   option_src_print_option_and_description \
     "drivers" \
     "\t" \
-    "\t"
+    "\t\t"
 
   option_src_print_option_and_description \
     "hardware-ids" \
@@ -583,8 +536,6 @@ function option_src_print_usage
     "ignore-iommu-groups" \
     "\t" \
     "\t"
-
-  set +o xtrace
 }
 
 #endregion
