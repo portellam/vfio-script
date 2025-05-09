@@ -47,24 +47,24 @@ declare DELIMITER=','
 
   #region options
 
-  declare -ag LONG_OPTION_WITHOUT_ARGUMENT_DICT=(
+  declare -Ag LONG_OPTION_WITHOUT_ARGUMENT_DICT=(
     #region generic
 
-    ["help"]=false,
-    ["verbose"]=false,
+    ["help"]=false
+    ["verbose"]=false
 
     #endregion
 
     #region supplmental
 
-    ["override"]=false,
+    ["override"]=false
 
     #endregion
 
     #region VFIO
 
-    ["dynamic-vfio"]=false,
-    ["uninstall-vfio"]=false,
+    ["dynamic-vfio"]=false
+    ["uninstall-vfio"]=false
 
     #endregion
   )
@@ -72,21 +72,21 @@ declare DELIMITER=','
   declare -Ag LONG_OPTION_WITH_ARGUMENT_DICT=(
     #region supplemental
 
-    ["cmdline"]="",
-    ["drivers"]="",
-    ["hardware-ids"]="",
-    ["iommu-groups"]="",
+    ["cmdline"]=""
+    ["drivers"]=""
+    ["hardware-ids"]=""
+    ["iommu-groups"]=""
 
-    ["ignore-drivers"]="",
-    ["ignore-hardware-ids"]="",
-    ["ignore-iommu-groups"]="",
+    ["ignore-drivers"]=""
+    ["ignore-hardware-ids"]=""
+    ["ignore-iommu-groups"]=""
 
     #endregion
 
     #region VFIO
 
-    ["multi-vfio"]="",
-    ["static-vfio"]="",
+    ["multi-vfio"]=""
+    ["static-vfio"]=""
 
     #endregion
   )
@@ -102,6 +102,7 @@ declare DELIMITER=','
     #region generic
 
     LONG_AND_SHORT_OPTION_DICT["help"]="h"
+    LONG_AND_SHORT_OPTION_DICT["verbose"]="v"
 
     #endregion
 
@@ -143,55 +144,55 @@ declare DELIMITER=','
   #region usage
 
   declare -Ag ARGUMENT_AND_DESCRIPTION_DICT=(
-    ["conf"]="Write to various configuration files.",
-    ["grub"]="Write to GRUB.",
+    ["conf"]="Write to various configuration files."
+    ["grub"]="Write to GRUB."
 
-    ["prefer-stub-driver"]="Blacklist devices' with the older \"pci-stub\" driver instead of the \"vfio-pci\" driver.\nNote: not recommended as lower power states are not managed by the Host machine. Useful for stubborn devices.",
+    ["prefer-stub-driver"]="Blacklist devices' with the older \"pci-stub\" driver instead of the \"vfio-pci\" driver.\nNote: not recommended as lower power states are not managed by the Host machine. Useful for stubborn devices."
   )
 
   declare -Ag ARGUMENT_AND_LONG_OPTION_DICT=(
-    ["conf"]="static-vfio",
-    ["grub"]="static-vfio",
-    ["prefer-stub-driver"]="hardware-ids",
+    ["conf"]="static-vfio"
+    ["grub"]="static-vfio"
+    ["prefer-stub-driver"]="hardware-ids"
   )
 
   declare -ag LONG_OPTION_AND_DESCRIPTION_DICT=(
     #region generic
 
-    ["help"]="Print this help and exit.",
-    ["verbose"]="Show more output.",
+    ["help"]="Print this help and exit."
+    ["verbose"]="Show more output."
 
     #endregion
 
     #region supplmental
 
-    ["cmdline"]="Define the GRUB command line.\nNote: avoid escape characters, such as double-quote (\") and/or VFIO commands so as to prevent conflicts.",
+    ["cmdline"]="Define the GRUB command line.\nNote: avoid escape characters, such as double-quote (\") and/or VFIO commands so as to prevent conflicts."
 
-    ["drivers"]="Specify which devices' drivers to override.",
+    ["drivers"]="Specify which devices' drivers to override."
 
-    ["ignore-drivers"]="Specify which devices' drivers to not override.",
+    ["ignore-drivers"]="Specify which devices' drivers to not override."
 
-    ["hardware-ids"]="Specify which devices' IDs to blacklist.",
+    ["hardware-ids"]="Specify which devices' IDs to blacklist."
 
-    ["ignore-hardware-ids"]="Specify which devices' IDs to whitelist.",
+    ["ignore-hardware-ids"]="Specify which devices' IDs to whitelist."
 
-    ["iommu-groups"]="Specify which IOMMU groups may be reserved for any Guest machine.",
+    ["iommu-groups"]="Specify which IOMMU groups may be reserved for any Guest machine."
 
-    ["ignore-iommu-groups"]="Specify which IOMMU groups may be reserved for the Host machine.",
+    ["ignore-iommu-groups"]="Specify which IOMMU groups may be reserved for the Host machine."
 
-    ["override"]="Override safety limits. Override a maximum amount of permutations, and/or features which may repeat a given command many times.\nNote: safety limits are five (5) permutations/repeats each.\nNote: no prompt at runtime.",
+    ["override"]="Override safety limits. Override a maximum amount of permutations, and/or features which may repeat a given command many times.\nNote: safety limits are five (5) permutations/repeats each.\nNote: no prompt at runtime."
 
     #endregion
 
     #region VFIO
 
-    ["dynamic-vfio"]="Define a temporary VFIO setup as a QEMU command line. Append to a Libvirt hook or a Guest machine configuration file. This VFIO setup may be created/destroyed on a Guest startup/shutdown.",
+    ["dynamic-vfio"]="Define a temporary VFIO setup as a QEMU command line. Append to a Libvirt hook or a Guest machine configuration file. This VFIO setup may be created/destroyed on a Guest startup/shutdown."
 
-    ["multi-vfio"]="Define one or more persistent VFIO setup\(s\) as GRUB command line permutations\; setup\(s\) are defined as individual GRUB boot menu entries, where one permutation may be chosen at Host machine startup.\nNote: multiple GPUs on separate IOMMU groups will create multiple permutations.\nRequired executable\(s\): \"${MULTIPLE_VFIO_SCRIPT}\".\nOptional executable\(s\): \"${RECOMMENDED_SCRIPT}\".",
+    ["multi-vfio"]="Define one or more persistent VFIO setup(s) as GRUB command line permutations\; setup(s) are defined as individual GRUB boot menu entries, where one permutation may be chosen at Host machine startup.\nNote: multiple GPUs on separate IOMMU groups will create multiple permutations.\nRequired executable(s): \"${MULTIPLE_VFIO_SCRIPT}\".\nOptional executable(s): \"${RECOMMENDED_SCRIPT}\"."
 
-    ["static-vfio"]="Define a persistent VFIO setup.\nOptional executable\(s\): \"${RECOMMENDED_SCRIPT}\".",
+    ["static-vfio"]="Define a persistent VFIO setup.\nOptional executable(s): \"${RECOMMENDED_SCRIPT}\"."
 
-    ["uninstall-vfio"]="Uninstall persistent VFIO setup\(s\).",
+    ["uninstall-vfio"]="Uninstall persistent VFIO setup(s)."
 
     #endregion
   )
@@ -199,33 +200,33 @@ declare DELIMITER=','
   declare -Ag LONG_OPTION_AND_VALUE_TYPE_DICT=(
     #region supplemental
 
-    ["cmdline"]="COMMANDS",
-    ["drivers"]="DRIVERS",
-    ["hardware-ids"]="IDS",
-    ["iommu-groups"]="GROUPS",
+    ["cmdline"]="COMMANDS"
+    ["drivers"]="DRIVERS"
+    ["hardware-ids"]="IDS"
+    ["iommu-groups"]="GROUPS"
 
     #endregion
 
     #region VFIO
 
-    ["multi-vfio"]="KERNELS",
-    ["static-vfio"]="ARGUMENTS",
+    ["multi-vfio"]="KERNELS"
+    ["static-vfio"]="ARGUMENTS"
 
     #endregion
   )
 
   declare -Ag VALUE_TYPE_AND_DESCRIPTION_DICT=(
-    ["ARGUMENTS"]="ARGUMENTS is the argument(s) for a given option.",
+    ["ARGUMENTS"]="ARGUMENTS is the argument(s) for a given option."
 
-    ["COMMANDS"]="COMMANDS is a whitespace-delimited list of command line arguments.",
+    ["COMMANDS"]="COMMANDS is a whitespace-delimited list of command line arguments."
 
-    ["DRIVERS"]="DRIVERS is a comma-delimited list of devices' driver names.",
+    ["DRIVERS"]="DRIVERS is a comma-delimited list of devices' driver names."
 
-    ["GROUPS"]="GROUPS is a comma-delimited list of positive numbers.\nNote: to use all except pre-selected groups, do not use this option.",
+    ["GROUPS"]="GROUPS is a comma-delimited list of positive numbers.\nNote: to use all except pre-selected groups, do not use this option."
 
-    ["IDS"]="IDS is a comma delimited list of devices' IDs.",
+    ["IDS"]="IDS is a comma delimited list of devices' IDs."
 
-    ["KERNELS"]="KERNELS is a comma-delimited list of positive non-zero numbers representing selected kernel(s); multiply the permutations by the number of available kernel(s) to be used (sorted newest to oldest).\nNote: to use all available, input '0'.",
+    ["KERNELS"]="KERNELS is a comma-delimited list of positive non-zero numbers representing selected kernel(s); multiply the permutations by the number of available kernel(s) to be used (sorted newest to oldest).\nNote: to use all available, input '0'."
   )
 
   #endregion
@@ -397,7 +398,7 @@ function option_src_parse_option_with_argument
   local long_option="${1}"
   local argument="${2}"
 
-  if ! [[ "${long_option}" =~ "${!LONG_OPTION_WITH_ARGUMENT_DICT[*]}" ]]; then
+  if ! [[ " ${!LONG_OPTION_WITH_ARGUMENT_DICT[*]} " == *" ${long_option} "* ]]; then
     return 0
   fi
 
@@ -425,8 +426,8 @@ function option_src_print_argument_and_description
   local whitespace_prefix="${2}"
   local whitespace_buffer="${3}"
 
-  if ! [[ "${LONG_OPTION_LIST[*]}" =~ "${long_option}" ]] \
-    && ! [[ "${ARGUMENT_AND_LONG_OPTION_DICT[*]}" =~ "${long_option}" ]]; then
+  if ! [[ " ${LONG_OPTION_LIST[*]} " == *" ${long_option} "* ]] \
+    && ! [[ " ${ARGUMENT_AND_LONG_OPTION_DICT[*]} " == *" ${long_option} "* ]]; then
     echo
     return 0
   fi
@@ -434,16 +435,30 @@ function option_src_print_argument_and_description
   for argument in "${!ARGUMENT_AND_LONG_OPTION_DICT[@]}"; do
     local this_long_option="${ARGUMENT_AND_LONG_OPTION_DICT["${argument}"]}"
 
-    if [[ "${this_long_option}" != "${long_option}" ]]; then
+    if [[ "${long_option}" != "${this_long_option}" ]]; then
       continue
     fi
 
     local argument="${ARGUMENT_AND_LONG_OPTION_DICT["${long_option}"]}"
-    local description="${ARGUMENT_AND_DESCRIPTION_DICT["${long_option}"]}"
+    local -a description="${ARGUMENT_AND_DESCRIPTION_DICT["${long_option}"]}"
 
     echo \
       -e \
-      "\n${whitespace_prefix}${argument}${whitespace_buffer}${description}"
+      "\n${whitespace_prefix}${argument}${whitespace_buffer}${description[0]}"
+
+    unset description[0]
+
+    for line in "${description[@]}"; do
+      echo \
+        -e \
+        "${whitespace_prefix}${whitespace_buffer}${line}"
+    done
+
+    for line in "${description[@]}"; do
+      echo \
+      -e \
+      "${whitespace_prefix}${whitespace_buffer}${line}"
+    done
   done
 
   return 0
@@ -460,16 +475,22 @@ function option_src_print_option_and_description
   local whitespace_prefix="${2}"
   local whitespace_buffer="${3}"
 
-  if ! [[ "${LONG_OPTION_LIST[*]}" =~ "${long_option}" ]]; then
+  if ! [[ " ${LONG_OPTION_LIST[*]} " == *" ${long_option} "* ]]; then
     echo
     return 0
   fi
 
+  local short_option="${LONG_AND_SHORT_OPTION_DICT["${long_option}"]}"
+
+  if [[ "${short_option}" != "" ]]; then
+    short_option="-${short_option},"
+  fi
+
   local argument="${ARGUMENT_AND_LONG_OPTION_DICT["${long_option}"]}"
-  local full_description="${ARGUMENT_AND_DESCRIPTION_DICT["${long_option}"]}"
+  local full_description="${LONG_OPTION_AND_DESCRIPTION_DICT["${long_option}"]}"
   local value_type="${LONG_OPTION_AND_VALUE_TYPE_DICT["${long_option}"]}"
 
-  if [[ ${?} -eq 0 ]]; then
+  if [[ "${value_type}" != "" ]]; then
     local value_description="${VALUE_TYPE_AND_DESCRIPTION_DICT["${value_type}"]}"
 
     if [[ ${?} -eq 0 ]]; then
@@ -479,10 +500,18 @@ function option_src_print_option_and_description
 
   echo \
     -e \
-    "\n${whitespace_prefix}${argument}${whitespace_buffer}${description}"
+    "\n${whitespace_prefix}${short_option}--${long_option}${whitespace_buffer}${full_description[0]}"
+
+  unset full_description[0]
+
+  for line in "${full_description[@]}"; do
+    echo \
+      -e \
+      "${whitespace_prefix}${whitespace_buffer}${line}"
+  done
 
   option_src_print_argument_and_description \
-    "${long_option}" \
+    "${argument}" \
     "${whitespace_prefix}" \
     "${whitespace_buffer}"
 
@@ -542,7 +571,7 @@ function option_src_print_usage
     "\nVersion ${SCRIPT_VERSION}"\
     "\n"
 
-  set -o xtrace
+  # set -o xtrace
 
   option_src_print_option_and_description \
     "help" \
