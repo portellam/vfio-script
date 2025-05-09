@@ -3,7 +3,7 @@
 #
 # Project:        vfio-script
 # Filename:       option_src
-# Description:    Argument logic.
+# Description:    Option and argument logic.
 # Author(s):      Alex Portell <github.com/portellam>
 # Maintainer(s):  Alex Portell <github.com/portellam>
 # Version:        0.0.1
@@ -11,7 +11,11 @@
 
 #
 # TODO:
-# - [ ] write booleans to log when a function is successful or not.
+#
+# - [ ] finish usage presentation.
+#   - whitespace padding. Use columns?
+# - [ ] test usage.
+# - [x] write booleans to log when a function is successful or not.
 #   - use these to track where exactly some task failed, and what completed.
 #   - undo completed tasks, and notify of failed task.
 #
@@ -35,6 +39,9 @@ trap \
 declare SCRIPT_NAME="vfio-script"
 declare SCRIPT_VERSION="0.0.1"
 declare COLUMN_SIZE="$( tput cols )"
+
+declare MULTIPLE_VFIO_SCRIPT="parse-iommu-devices"
+declare RECOMMENDED_SCRIPT="auto-xorg"
 
 declare DELIMITER=','
 
@@ -70,6 +77,10 @@ declare DELIMITER=','
     ["hardware-ids"]="",
     ["iommu-groups"]="",
 
+    ["ignore-drivers"]="",
+    ["ignore-hardware-ids"]="",
+    ["ignore-iommu-groups"]="",
+
     #endregion
 
     #region VFIO
@@ -96,12 +107,15 @@ declare DELIMITER=','
 
     LONG_AND_SHORT_OPTION_DICT["drivers"]="d"
     LONG_OPTION_AND_REGEX_DICT["drivers"]="^[a-zA-Z]+(${DELIMITER}[a-zA-Z]+)*$"
+    LONG_OPTION_AND_REGEX_DICT["ignore-drivers"]="${LONG_OPTION_AND_REGEX_DICT["drivers"]}"
 
     LONG_AND_SHORT_OPTION_DICT["hardware-ids"]="i"
     LONG_OPTION_AND_REGEX_DICT["hardware-ids"]="^(\s*${DELIMITER}\s*|\s*([A-Za-z0-9]{4}:\s*[A-Za-z0-9]{4})\s*${DELIMITER}\s*)*$"
+    LONG_OPTION_AND_REGEX_DICT["ignore-hardware-ids"]="${LONG_OPTION_AND_REGEX_DICT["hardware-ids"]}"
 
     LONG_AND_SHORT_OPTION_DICT["iommu-groups"]="g"
     LONG_OPTION_AND_REGEX_DICT["iommu-groups"]="^([0-9]+)(${DELIMITER}[0-9]+)*$"
+    LONG_OPTION_AND_REGEX_DICT["ignore-iommu-groups"]="${LONG_OPTION_AND_REGEX_DICT["iommu-groups"]}"
 
     LONG_AND_SHORT_OPTION_DICT["override"]="o"
 
@@ -123,10 +137,79 @@ declare DELIMITER=','
 
   #region usage
 
-  declare -Ag_ARGUMENT_AND_LONG_OPTION_DICT=(
+  declare -Ag ARGUMENT_AND_DESCRIPTION_DICT=(
+    ["conf"]="Write to various configuration files.",
+    ["grub"]="Write to GRUB.",
+
+    ["prefer-stub-driver"]="Blacklist devices' with the older \"pci-stub\""\
+      "driver instead of the \"vfio-pci\" driver."\
+      "\nNote: not recommended as lower power states are not managed by the"\
+      " Host machine. Useful for stubborn devices.",
+  )
+
+  declare -Ag ARGUMENT_AND_LONG_OPTION_DICT=(
     ["conf"]="static-vfio",
     ["grub"]="static-vfio",
     ["prefer-stub-driver"]="hardware-ids",
+  )
+
+  declare -ag LONG_OPTION_AND_DESCRIPTION_DICT=(
+    #region generic
+
+    ["help"]="Print this help and exit.",
+    ["verbose"]="Show more output.",
+
+    #endregion
+
+    #region supplmental
+
+    ["cmdline"]="Define the GRUB command line."\
+      "\nNote: avoid escape characters, such as double-quote (\") and/or VFIO"\
+      " commands so as to prevent conflicts.",
+
+    ["drivers"]="Specify which devices' drivers to override.",
+
+    ["ignore-drivers"]="Specify which devices' drivers to not override.",
+
+    ["hardware-ids"]="Specify which devices' IDs to blacklist.",
+
+    ["ignore-hardware-ids"]="Specify which devices' IDs to whitelist.",
+
+    ["iommu-groups"]="Specify which IOMMU groups may be reserved for any Guest"\
+      " machine.",
+
+    ["ignore-iommu-groups"]="Specify which IOMMU groups may be reserved for"\
+      " the Host machine.",
+
+    ["override"]="Override safety limits. Override a maximum amount of"\
+      " permutations, and/or features which may repeat a given command many"\
+      " times."\
+      "\nNote: safety limits are five (5) permutations/repeats each."\
+      "\nNote: no prompt at runtime.",
+
+    #endregion
+
+    #region VFIO
+
+    ["dynamic-vfio"]="Define a temporary VFIO setup as a QEMU command line."\
+      " Append to a Libvirt hook or a Guest machine configuration file. This"\
+      " VFIO setup may be created/destroyed on a Guest startup/shutdown.",
+
+    ["multi-vfio"]="Define one or more persistent VFIO setup(s) as GRUB"\
+      " command line permutations; setup(s) are defined as individual GRUB"\
+      " boot menu entries, where one permutation may be chosen at Host machine"\
+      " startup."\
+      "\nNote: multiple GPUs on separate IOMMU groups will create multiple"\
+      "permutations.",
+      "\nRequired executable(s): \"${MULTIPLE_VFIO_SCRIPT}\".",
+      "\nOptional executable(s): \"${RECOMMENDED_SCRIPT}\".",
+
+    ["static-vfio"]="Define a persistent VFIO setup.",
+      "\nOptional executable(s): \"${RECOMMENDED_SCRIPT}\".",
+
+    ["uninstall-vfio"]="Uninstall persistent VFIO setup(s).",
+
+    #endregion
   )
 
   declare -Ag LONG_OPTION_AND_VALUE_TYPE_DICT=(
@@ -147,62 +230,8 @@ declare DELIMITER=','
     #endregion
   )
 
-  declare -ag LONG_OPTION_AND_DESCRIPTION_DICT=(
-    #region generic
-
-    ["help"]="Print this help and exit.",
-    ["verbose"]="Show more output.",
-
-    #endregion
-
-    #region supplmental
-
-    ["cmdline"]="Define the GRUB command line."\
-      "\nNote: avoid escape characters, such as double-quote (\") and/or VFIO"\
-      " commands so as to prevent conflicts.",
-
-    ["drivers"]="Specify which devices' drivers to override.",
-
-    ["hardware-ids"]="Specify which devices' IDs to blacklist.",
-
-    ["iommu-groups"]="Specify which IOMMU groups may be reserved for any Guest"\
-      " machine.",
-
-    ["override"]="Override safety limits. Override a maximum amount of"\
-      " permutations, and/or features which may repeat a given command many"\
-      " times."\
-      "\nNote: safety limits are five (5) permutations/repeats each."\
-      "\nNote: no prompt at runtime.",
-
-    ["prefer-stub-driver"]="Blacklist devices' with the older \"pci-stub\""\
-      "driver instead of the \"vfio-pci\" driver."\
-      "\nNote: not recommended as lower power states are not managed by the"\
-      " Host machine. Useful for stubborn devices.",
-
-    #endregion
-
-    #region VFIO
-
-    ["dynamic-vfio"]="Define a temporary VFIO setup as a QEMU command line."\
-      " Append to a Libvirt hook or a Guest machine configuration file. This"\
-      " VFIO setup may be created/destroyed on a Guest startup/shutdown.",
-
-    ["multi-vfio"]="Define one or more persistent VFIO setup(s) as GRUB"\
-      " command line permutations; setup(s) are defined as individual GRUB"\
-      " boot menu entries, where one permutation may be chosen at Host machine"\
-      " startup."\
-      "\nNote: multiple GPUs on separate IOMMU groups will create multiple"\
-      "permutations.",
-
-    ["static-vfio"]="Define a persistent VFIO setup.",
-
-    ["uninstall-vfio"]="Uninstall persistent VFIO setup(s).",
-
-    #endregion
-  )
-
   declare -Ag VALUE_TYPE_AND_DESCRIPTION_DICT=(
-    ["ARGUMENTS"]="ARGUMENTS is the argument(s) of a given option.",
+    ["ARGUMENTS"]="ARGUMENTS is the argument(s) for a given option.",
 
     ["COMMANDS"]="COMMANDS is a whitespace-delimited list of command line"\
       " arguments.",
@@ -239,7 +268,7 @@ function trap_any_error
   echo
 }
 
-function src_clean_up
+function option_src_clean_up
 {
   #TODO: develop.
   echo
@@ -248,7 +277,19 @@ function src_clean_up
 #
 # $@ : the options and arguments.
 #
-function src_parse_options
+function option_src_main
+{
+  if ! option_src_parse_options "${@}"; then
+    return 1
+  fi
+
+  return 0
+}
+
+#
+# $@ : the options and arguments.
+#
+function option_src_parse_options
 {
   #region getopt arguments setup
 
@@ -298,7 +339,7 @@ function src_parse_options
     "${var}"
 
   while true; do
-    local long_option="$( src_parse_get_long_option "${1}" )"
+    local long_option="$( option_src_parse_get_long_option "${1}" )"
 
     if [[ ${?} -ne 0 ]]; then
       echo \
@@ -310,10 +351,14 @@ function src_parse_options
 
     local argument="${2}"
 
-    if src_parse_option_with_argument \
+    if option_src_parse_option_with_argument \
         "${long_option}" \
         "${argument}" \
         &> /dev/null; then
+      echo \
+        "Expected argument: ${argument}" \
+        >&1
+
       shift 2
 
     elif [[ "${long_option}" =~ "${!LONG_OPTION_WITHOUT_ARGUMENT_DICT[*]}" ]]; then
@@ -331,6 +376,10 @@ function src_parse_options
 
       return 1
     fi
+
+    echo \
+      "Expected option: ${long_option}" \
+      >&1
   done
 
   return 0
@@ -340,7 +389,7 @@ function src_parse_options
 # $1      : the short option.
 # returns : if short option is expected, return the long option.
 #
-function src_parse_get_long_option
+function option_src_parse_get_long_option
 {
   local long_option="${1}"
 
@@ -365,7 +414,7 @@ function src_parse_get_long_option
 # $2      : the argument.
 # returns : if long option has argument and argument matches regex, return argument.
 #
-function src_parse_option_with_argument
+function option_src_parse_option_with_argument
 {
   local long_option="${1}"
   local argument="${2}"
@@ -384,6 +433,111 @@ function src_parse_option_with_argument
   LONG_OPTION_WITH_ARGUMENT_DICT["${long_option}"]="${argument}"
   echo "${argument}"
   return 0
+}
+
+
+#
+# $1 : the long option with an argument.
+# $2 : the whitespace prefix.
+# $3 : the whitespace buffer.
+#
+function option_src_print_argument_and_description
+{
+  local long_option="${1}"
+
+  if ! [[ "${long_option}" =~ "${!LONG_OPTION_WITH_ARGUMENT_DICT[*]}" ]] \
+    || ! ! [[ "${long_option}" =~ "${ARGUMENT_AND_LONG_OPTION_DICT[*]}" ]]; then
+    echo
+    return 0
+  fi
+
+  local argument="${ARGUMENT_AND_LONG_OPTION_DICT["${long_option}"]}"
+  local description="${ARGUMENT_AND_DESCRIPTION_DICT["${long_option}"]}"
+
+  echo \
+    -e \
+    "${2}${argument}${3}${description}"
+
+  return 0
+}
+
+#
+# $1 : the long option with an argument.
+# $2 : the whitespace prefix.
+# $3 : the whitespace buffer.
+#
+function option_src_print_option_and_description
+{
+  local long_option="${1}"
+
+  if ! [[ "${long_option}" =~ "${!LONG_OPTION_WITH_ARGUMENT_DICT[*]}" ]] \
+    || ! ! [[ "${long_option}" =~ "${ARGUMENT_AND_LONG_OPTION_DICT[*]}" ]]; then
+    echo
+    return 0
+  fi
+
+  local argument="${ARGUMENT_AND_LONG_OPTION_DICT["${long_option}"]}"
+  local full_description="${ARGUMENT_AND_DESCRIPTION_DICT["${long_option}"]}"
+  local value_type="${LONG_OPTION_AND_VALUE_TYPE_DICT["${long_option}"]}"
+
+  if [[ ${?} -eq 0 ]]; then
+    local value_description="${VALUE_TYPE_AND_DESCRIPTION_DICT["${value_type}"]}"
+
+    if [[ ${?} -eq 0 ]]; then
+      full_description+="\n${value_description}"
+    fi
+  fi
+
+  echo \
+    -e \
+    "${2}${argument}${3}${description}"
+
+  return 0
+}
+
+#
+# DESC  : Does some cool shit maybe you didn't know.
+#
+function option_src_print_usage
+{
+  echo \
+    -e \
+    "Usage:\t${SCRIPT_NAME} ARGS"\
+    "\nVersion ${SCRIPT_VERSION}"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["help"]}"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["override"]}"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["verbose"]}"\
+    "\n"\
+    "\nVFIO setup options:"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["dynamic-vfio"]}"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["multi-vfio"]}"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["static-vfio"]}"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["uninstall-vfio"]}"\
+    "\n"\
+    "\nSupplemental options:"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["cmdline"]}"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["drivers"]}"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["hardware-ids"]}"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["iommu-groups"]}"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["ignore-drivers"]}"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["ignore-hardware-ids"]}"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["ignore-iommu-groups"]}"\
+    "\n"\
+    "\n${LONG_OPTION_AND_DESCRIPTION_DICT["prefer-stub-driver"]}"
 }
 
 #endregion

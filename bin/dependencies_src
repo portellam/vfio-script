@@ -1,0 +1,56 @@
+#!/bin/false
+
+#
+# Project:        vfio-script
+# Filename:       dependencies_src
+# Description:    Dependency validation.
+# Author(s):      Alex Portell <github.com/portellam>
+# Maintainer(s):  Alex Portell <github.com/portellam>
+# Version:        0.0.1
+#
+
+#region global parameters
+
+declare MULTIPLE_VFIO_SCRIPT="parse-iommu-devices"
+
+#endregion
+
+#region logic
+
+function dependencies_src_main
+{
+  if ! dependencies_src_does_executable_exist; then
+    echo \
+      "Warning: Missing one (1) or more dependencies." \
+      >&2
+
+    return 1
+  fi
+
+  echo \
+    "Alert: Found all dependencies." \
+    >&2
+
+  return 0
+}
+
+function dependencies_src_does_executable_exist
+{
+  if ! command \
+    -v \
+    "${MULTIPLE_VFIO_SCRIPT}" \
+    &> /dev/null; then
+    echo \
+      "Warning: Missing required executable ${MULTIPLE_VFIO_SCRIPT}" \
+      >&2
+    return 1
+  fi
+
+  echo \
+    "Alert: Found required executable ${MULTIPLE_VFIO_SCRIPT}" \
+    >&2
+
+  return 0
+}
+
+#endregion
