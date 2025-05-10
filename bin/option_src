@@ -446,7 +446,7 @@ function option_src_print_this_option_and_description
     fi
   fi
 
-  IFS=$'\n' read -rd '' -a lines <<< "$full_description"
+  IFS=$'\n' read -rd '' -a lines <<< "$( echo -e "${full_description}" )"
 
   echo \
     -e \
