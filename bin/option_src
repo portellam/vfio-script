@@ -373,21 +373,32 @@ function option_src_print_argument_and_description
 
     local argument="${ARGUMENT_AND_LONG_OPTION_DICT["${long_option}"]}"
     local -a description="${ARGUMENT_AND_DESCRIPTION_DICT["${long_option}"]}"
-    IFS=$'\n' read -rd '' -a lines <<< "$description"
+    IFS=$'\n' read -rd '' -a lines <<< "$( echo -e "${description}" )"
+
+    local output="$( \
+      echo \
+        -e \
+        "${whitespace_prefix}${short_option}--${long_option}${whitespace_buffer}"
+    )"
+
+    local new_whitespace_prefix=""
 
     echo \
       -e \
       -n \
-      "${whitespace_prefix}${short_option}--${long_option}${whitespace_buffer}"\
-      "${lines[0]}\n"
+      "${output}${lines[0]}\n"
 
-    unset lines[0]
+    for i in $( seq 0 ${#output} ); do
+      new_whitespace_prefix+=" "
+    done
+
+    unset 'lines[0]'
 
     for line in "${lines[@]}"; do
       echo \
         -e \
         -n \
-        "\t\t\t${whitespace_prefix}${whitespace_buffer}${line}\n"
+        "${new_whitespace_prefix}${whitespace_buffer}${line}\n"
     done
   done
 
@@ -446,21 +457,32 @@ function option_src_print_this_option_and_description
     fi
   fi
 
-  IFS=$'\n' read -rd '' -a lines <<< "$full_description"
+  IFS=$'\n' read -rd '' -a lines <<< "$( echo -e "${description}" )"
+
+  local output="$( \
+    echo \
+      -e \
+      "${whitespace_prefix}${short_option}--${long_option} ${value_type}${whitespace_buffer}" \
+  )"
+
+  local new_whitespace_prefix=""
 
   echo \
     -e \
     -n \
-    "${whitespace_prefix}${short_option}--${long_option}${whitespace_buffer}"\
-    "${lines[0]}\n"
+    "${output}${lines[0]}\n"
 
-  unset lines[0]
+  for i in $( seq 0 "${#output}" ); do
+    new_whitespace_prefix+=" "
+  done
+
+  unset 'lines[0]'
 
   for line in "${lines[@]}"; do
     echo \
       -e \
       -n \
-      "\t\t\t${whitespace_prefix}${whitespace_buffer}${line}\n"
+      "${new_whitespace_prefix}${whitespace_buffer}${line}\n"
   done
 
   option_src_print_argument_and_description \
@@ -482,10 +504,14 @@ function option_src_print_usage
     "static setup."\
     "\nVersion ${SCRIPT_VERSION}"
 
+  option_src_print_this_option_and_description \
+    "  " \
+    "\t\t" \
+    "help"
+
   option_src_print_many_option_and_description \
+    "  " \
     "\t" \
-    "\t" \
-    "help" \
     "override" \
     "verbose"
 
@@ -493,20 +519,20 @@ function option_src_print_usage
     -e \
     "VFIO setup options:\n"
 
-  option_src_print_this_option_and_description \
-    "\t" \
-    "\t" \
-    "dynamic-vfio"
-
-  option_src_print_this_option_and_description \
-    "\t" \
+  option_src_print_many_option_and_description \
+    "  " \
     "\t\t" \
+    "dynamic-vfio" \
     "multi-vfio"
 
+  option_src_print_this_option_and_description \
+    "  " \
+    "\t" \
+    "static-vfio"
+
   option_src_print_many_option_and_description \
-    "\t" \
-    "\t" \
-    "static-vfio" \
+    "  " \
+    "\t\t" \
     "uninstall-vfio"
 
   echo \
@@ -515,13 +541,13 @@ function option_src_print_usage
     "Supplemental options:"
 
   option_src_print_many_option_and_description \
-    "\t" \
+    "  " \
     "\t\t" \
     "cmdline" \
     "drivers"
 
   option_src_print_many_option_and_description \
-    "\t" \
+    "  " \
     "\t" \
     "hardware-ids" \
     "iommu-groups" \
