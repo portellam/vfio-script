@@ -373,7 +373,14 @@ function option_src_print_argument_and_description
 
     local argument="${ARGUMENT_AND_LONG_OPTION_DICT["${long_option}"]}"
     local -a description="${ARGUMENT_AND_DESCRIPTION_DICT["${long_option}"]}"
-    IFS=$'\n' read -rd '' -a lines <<< "$description"
+
+    IFS=$'\n'
+
+    read \
+      -a lines \
+      -d '' \
+      -r \
+      <<< "$( echo -e "${description}" )"
 
     echo \
       -e \
@@ -446,7 +453,13 @@ function option_src_print_this_option_and_description
     fi
   fi
 
-  IFS=$'\n' read -rd '' -a lines <<< "$( echo -e "${full_description}" )"
+  IFS=$'\n'
+
+  read \
+    -a lines \
+    -d '' \
+    -r \
+    <<< "$( echo -e "${full_description}" )"
 
   echo \
     -e \
