@@ -1,8 +1,7 @@
 # VFIO Script
 ### Development | v0.0.1
-Easily and automate the install, uninstall, or reinstall of a
-hardware-passthrough (VFIO) setup on a Linux machine. Select from either
-a dynamic, GRUB, or static setup.
+Easily automate the install or uninstall of a hardware-passthrough (VFIO) setup
+on a Linux machine. Select from either a dynamic, GRUB, or static setup.
 
 #### View this repository on [Codeberg][01] or [GitHub][02].
 [01]: https://codeberg.org/portellam/vfio-script
@@ -110,13 +109,9 @@ sudo bash installer.sh
 ```
   -h, --help     Print this help and exit.
   -v, --verbose  Show more output.
+  -U, --uninstall          Uninstalls persistent VFIO setups.
 
-  VFIO setups:
-
-  -D, --dynamic            Define a temporary VFIO setup as a QEMU command line.
-                           Append to a Libvirt hook or a Guest machine
-                           configuration file. This VFIO setup may be
-                           created/destroyed on a Guest startup/shutdown.
+  Multiple GRUB VFIO setup arguments:
 
   -M|--multiple-grub NUMS  Define one or more persistent VFIO setup(s) as GRUB
                            command line permutations; setup(s) are defined as
@@ -131,30 +126,33 @@ sudo bash installer.sh
                            be used (sorted newest to oldest).
                            Note: to use all available, input '0'.
 
+    ptions:
+
+    --exclude-drivers DRIVERS       Specify which devices' drivers to not override
+                                    with a VFIO driver, if not defined within
+                                    "--drivers".
+
+                                    DRIVERS is a comma delimited list of text.
+
+    --exclude--iommu-groups GROUPS  Specify which IOMMU groups may be reserved for
+                                    the Host machine, if not defined within
+                                    "--iommu-groups".
+
+                                    GROUPS is a comma delimited list of positive
+                                    numbers.
+
+  Other VFIO setup arguments:
+
+  -D, --dynamic            Define a temporary VFIO setup as a QEMU command line.
+                           Append to a Libvirt hook or a Guest machine
+                           configuration file. This VFIO setup may be
+                           created/destroyed on a Guest startup/shutdown.
+
   -S|--static OPT          Define a persistent VFIO setup.
                            OPT is an option.
 
   --static grub            Write to GRUB.
   --static conf            Write various configuration files.
-
-  -U, --uninstall          Uninstalls persistent VFIO setups.
-
-  Additional arguments:
-
-  -u, --allow-unsafe       Override safety limits. Override a maximum amount of
-                           permutations, and/or features which may repeat a given
-                           command many times.
-                           Note: safety limits are five (5) units each.
-                           Note: no prompt at execution.
-
-
-  -c, --grub-cmdline TEXT  Define the GRUB command line.
-                           Note: avoid escape characters, such as double-quote (")
-                           and/or VFIO commands so as to prevent conflicts.
-
-                           TEXT is whitespace delimited text.
-
-  Guest-machine-reserved devices to match:
 
   -g|--iommu-groups GROUPS  Specify which IOMMU groups may be reserved for any
                             Guest machine.
@@ -166,36 +164,35 @@ sudo bash installer.sh
 
                             DRIVERS is a comma delimited list of text.
 
-  -V|--vfio-pci-ids HWIDS   Specify which devices' IDs to blacklist.
+  -h|--hardware-ids HWIDS   Specify which devices' IDs to blacklist.
 
                             HWIDS is a comma delimited list of text.
 
-  -p|--pci-stub-ids HWIDS   Specify which devices' IDs to blacklist and drivers
-                            to override with the "pci-stub" driver.
 
-                            HWIDS is a comma delimited list of text.
-
-  Host-machine-reserved devices to match:
-
-  --exclude-drivers DRIVERS       Specify which devices' drivers to not override
-                                  with a VFIO driver, if not defined within
-                                  "--drivers".
-
-                                  DRIVERS is a comma delimited list of text.
-
-  --exclude--iommu-groups GROUPS  Specify which IOMMU groups may be reserved for
-                                  the Host machine, if not defined within
-                                  "--iommu-groups".
-
-                                  GROUPS is a comma delimited list of positive
-                                  numbers.
+  Additional arguments:
 
 
-  --exclude-hardware-ids HWIDS    Specify which devices' IDs to whitelist, if not
-                                  defined within "--vfio-pci-ids" or
-                                  "--pci-stub-ids".
 
-                                  HWIDS is a comma delimited list of text.
+  --exclude-drivers DRIVERS   Specify which devices' drivers to not override
+                              with a VFIO driver, if not defined within
+                              "--drivers".
+
+                              DRIVERS is a comma delimited list of text.
+
+
+  -u, --allow-unsafe          Override safety limits. Override a maximum amount of
+                              permutations, and/or features which may repeat a given
+                              command many times.
+                              Note: safety limits are five (5) units each.
+                              Note: no prompt at execution.
+
+  -c, --grub-cmdline TEXT     Define the GRUB command line.
+                              Note: avoid escape characters, such as double-quote (")
+                              and/or VFIO commands so as to prevent conflicts.
+
+                              TEXT is whitespace delimited text.
+
+
 
 Examples:
       --multiple-grub 3   Define a multiple of GRUB boot menu entries (as

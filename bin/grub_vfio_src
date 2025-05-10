@@ -21,6 +21,11 @@ source \
   "${SOURCE_PATH}" \
   "${COLUMN_SIZE}"
 
+source \
+  "${SOURCE_PATH}select_device_src" \
+  "${SOURCE_PATH}" \
+  "${COLUMN_SIZE}"
+
 #endregion
 
 #region Parameters
@@ -96,122 +101,36 @@ function grub_vfio_src_main
   fi
 
   local cmdline_prefix="${1}"
-  cmdline_prefix="${cmdline_prefix//\"/}"
   shift
-
   local allow_unsafe="${2}"
   shift
 
-  local -a driver_delim_list=()
-  local -a excluded_iommu_group_delim_list=()
-  local -a pci_stub_id_delim_list=()
-  local -a vfio_pci_id_delim_list=()
-
-  local -i index=1
-  local -i max_index="${SAFE_MAX}"
-
-  if "${allow_unsafe}"; then
-    max_index=128
-  fi
-
-  while [[ "${index}" -le "${max_index}" ]]; do
-    if [[ "${1}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
-      excluded_iommu_group_delim_list+=( "${1}" )
-
-    elif [[ "${1}" =~ "${WORD_DELIM_REGEX}" ]]; then
-      driver_delim_list+=( "${1}" )
-
-    elif is_boolean "${1}"; then
-      local do_use_vfio_pci="${1}"
-      shift
-
-      if ! [[ "${1}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
-        continue
-      fi
-
-      if "${do_use_vfio_pci}"; then
-        pci_stub_id_delim_list+=( "" )
-        vfio_pci_id_delim_list+=( "${1}" )
-      else
-        pci_stub_id_delim_list+=( "${1}" )
-        vfio_pci_id_delim_list+=( "" )
-      fi
-
-    elif is_string "${1}"; then
-      print_error_to_log "Invalid input."
-      return 2
-
-    else
-      break
-    fi
-
-    shift
-    (( index++ ))
-  done
+  local excluded_iommu_group_delim=""
 
   if ! grub_vfio_src_get_kernel_cmdline_iommu_driver; then
     return 1
   fi
 
-  local destination_path="/etc/grub.d/40_custom"
+  # ask for what groups to exclude
 
-  if ! grub_vfio_src_write_most_grub \
-      "${cmdline_prefix}" \
-      "${destination_path}" \
-    || ! grub_vfio_src_update_grub; then
-    print_fail_to_log "Failed to install a GRUB VFIO setup."
-    return 1
-  fi
+  local -a output=()
 
-  print_pass_to_log "Installed a GRUB VFIO setup."
-}
-
-#
-# $1 : the whitespace delimited string of command lines.
-# $2 : the comma delimited list of IOMMU groups to exclude.
-#
-function grub_vfio_src_main_old
-{
-  local cmdline_prefix="${1}"
-
-  if is_string "${cmdline_prefix}" \
-    && reference_has_unmatch \
-      "cmdline_prefix" \
-      "${DRIVER_DELIM_REGEX}" \
-    && reference_has_unmatch \
-      "cmdline_prefix" \
-      "${HARDWARE_ID_DELIM_REGEX}" \
-    && reference_has_unmatch \
-      "cmdline_prefix" \
-      "${IOMMU_GROUP_DELIM_REGEX}"; then
-    cmdline_prefix="${cmdline_prefix//\"/}"
-    shift
+  if is_string "${@}"; then
+    output=( "${@}" )
 
   else
-    cmdline_prefix=""
+    local -a output=$( \
+      eval \
+        "${EXECUTABLE}" \
+        --ignore-group ${excluded_iommu_group_delim} \
+        --pcie
+    )
   fi
 
-  local excluded_iommu_group_delim="${1}"
-
-  if is_string "${excluded_iommu_group_delim}" \
-    && ! reference_has_match \
-      "excluded_iommu_group_delim" \
-      "${IOMMU_GROUP_DELIM_REGEX}"; then
-    return 2
-  fi
-
-  if ! grub_vfio_src_get_kernel_cmdline_iommu_driver; then
-    return 1
-  fi
-
-  local destination_path="/etc/grub.d/40_custom"
-
-  if ! grub_vfio_src_get_non_video_delims "${excluded_iommu_group_delim}" \
-    || ! grub_vfio_src_get_video_delim_lists "${excluded_iommu_group_delim}" \
-    || ! grub_vfio_src_write_most_grub \
-      "${cmdline_prefix}" \
-      "${destination_path}" \
-    || ! grub_vfio_src_update_grub; then
+  if ! grub_vfio_src_parse_input \
+    "${cmdline_prefix}" \
+    "${allow_unsafe}" \
+    "${output[@]}"; then
     print_fail_to_log "Failed to install a GRUB VFIO setup."
     return 1
   fi
@@ -274,16 +193,11 @@ function grub_vfio_src_get_non_video_delims
 
   local names_to_ignore_delim="ether"
 
-  local output="$( \
-    eval \
-      "${EXECUTABLE}" \
-      --ignore-group ${excluded_iommu_group_delim} \
-      --ignore-name ${names_to_ignore_delim} \
-      --pcie
-  )"
-
-  NOVIDEO_HARDWARE_ID_DELIM+="${output[0]}"
-  NOVIDEO_DRIVER_DELIM+="${output[1]}"
+  eval \
+    "${EXECUTABLE}" \
+    --ignore-group ${excluded_iommu_group_delim} \
+    --ignore-name ${names_to_ignore_delim} \
+    --pcie
 }
 
 #
@@ -325,6 +239,90 @@ function grub_vfio_src_get_video_delim_lists
     VIDEO_IOMMU_GROUP_LIST+=( "${output[2]}" )
     (( index++ ))
   done
+}
+
+#
+# $1 : the whitespace delimited string of command lines.
+# $2 : true/false remove limits.
+# $@ : for a given permutation, repeat $3 => $6 indefinitely.
+# $3 : for a given permutation, the comma delimited list of excluded IOMMU groups.
+# $4 : for a given permutation, the comma delimited list of blacklisted drivers.
+# $5 : for a given permutation, true/false use driver "vfio-pci" or "pci-stub".
+# $6 : for a given permutation, the comma delimited string of device IDs.
+#
+function grub_vfio_src_parse_input
+{
+
+  if ! is_string "${1}" \
+    || ! is_boolean "${2}"; then
+    return 2
+  fi
+
+  local cmdline_prefix="${1}"
+  cmdline_prefix="${cmdline_prefix//\"/}"
+  shift
+
+  local allow_unsafe="${2}"
+  shift
+
+  local -a driver_delim_list=()
+  local -a excluded_iommu_group_delim_list=()
+  local -a pci_stub_id_delim_list=()
+  local -a vfio_pci_id_delim_list=()
+
+  local -i index=1
+  local -i max_index="${SAFE_MAX}"
+
+  if "${allow_unsafe}"; then
+    max_index=128
+  fi
+
+  while [[ "${index}" -le "${max_index}" ]]; do
+    if [[ "${1}" =~ "${IOMMU_GROUP_DELIM_REGEX}" ]]; then
+      excluded_iommu_group_delim_list+=( "${1}" )
+
+    elif [[ "${1}" =~ "${WORD_DELIM_REGEX}" ]]; then
+      driver_delim_list+=( "${1}" )
+
+    elif is_boolean "${1}"; then
+      local do_use_vfio_pci="${1}"
+      shift
+
+      if ! [[ "${1}" =~ "${HARDWARE_ID_DELIM_REGEX}" ]]; then
+        continue
+      fi
+
+      if "${do_use_vfio_pci}"; then
+        pci_stub_id_delim_list+=( "" )
+        vfio_pci_id_delim_list+=( "${1}" )
+      else
+        pci_stub_id_delim_list+=( "${1}" )
+        vfio_pci_id_delim_list+=( "" )
+      fi
+
+    elif is_string "${1}"; then
+      print_error_to_log "Invalid input."
+      return 2
+
+    else
+      break
+    fi
+
+    shift
+    (( index++ ))
+  done
+
+  local destination_path="/etc/grub.d/40_custom"
+
+  if ! grub_vfio_src_write_most_grub \
+      "${cmdline_prefix}" \
+      "${destination_path}" \
+    || ! grub_vfio_src_update_grub; then
+    print_fail_to_log "Failed to install a GRUB VFIO setup."
+    return 1
+  fi
+
+  print_pass_to_log "Installed a GRUB VFIO setup."
 }
 
 function grub_vfio_src_update_grub
