@@ -11,7 +11,14 @@
 
 #region global parameters
 
-declare MULTIPLE_VFIO_SCRIPT="parse-iommu-devices"
+declare -g MULTIPLE_VFIO_SCRIPT="parse-iommu-devices"
+
+declare -ag LIBRARY_LIST=(
+  # "echo"
+  "eval"
+  "getopt"
+  "printf"
+)
 
 #endregion
 
@@ -19,7 +26,8 @@ declare MULTIPLE_VFIO_SCRIPT="parse-iommu-devices"
 
 function dependencies_src_main
 {
-  if ! dependencies_src_does_executable_exist; then
+  if ! dependencies_src_does_executable_exist \
+    || ! dependencies_src_do_libraries_exist; then
     echo \
       "Warning: Missing one (1) or more dependencies." \
       >&2
@@ -29,7 +37,30 @@ function dependencies_src_main
 
   echo \
     "Alert: Found all dependencies." \
-    >&2
+    >&1
+
+  return 0
+}
+
+function dependencies_src_do_libraries_exist
+{
+  local any_failure=false
+
+  for library in "${LIBRARY_LIST[@]}"; do
+    if ! command \
+      -v \
+      "${library}" \
+      &> /dev/null; then
+      echo \
+        "Warning: Missing required library ${library}" \
+        >&2
+      any_failure=true
+    fi
+  done
+
+  if "${any_failure}"; then
+    return 1
+  fi
 
   return 0
 }
