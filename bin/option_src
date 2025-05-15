@@ -536,41 +536,46 @@ function option_src_print_usage
 {
   echo \
     -e \
-    -n \
-    "Usage:\t${SCRIPT_NAME} ARGS"\
-    "\nEasily automate the install or uninstall of a hardware-passthrough"\
+    "\n" \
+    "Usage:" \
+    "\n" \
+    "${SCRIPT_NAME} OPTIONS" \
+    "\n"\
+    "${SCRIPT_NAME} OPTIONS PARAMETER"\
+    "\n"\
+    "${SCRIPT_NAME} OPTIONS ARGUMENT PARAMETER"\
+    "\n"\
+    "Easily automate the install or uninstall of a hardware-passthrough"\
     "(VFIO) setup on a Linux machine. Select from either a dynamic, GRUB, or"\
     "static setup."\
-    "\nVersion ${SCRIPT_VERSION}"
-
-  option_src_print_many_option_and_description \
-    " " \
-    "\t" \
-    "help" \
-    "override" \
-    "verbose"
+    "\n"\
+    "Version ${SCRIPT_VERSION}"\
+    "\n"\
+    "Options:"\
+    "\n"
 
   echo \
     -e \
-    "VFIO setup options:\n"
+    " VFIO setup:"\
+    "\n"
 
   option_src_print_this_option_and_description \
-    " " \
+    " \t" \
     "\t\t" \
     "dynamic-vfio"
 
   option_src_print_this_option_and_description \
-    " " \
+    " \t" \
     "\t\t" \
     "multi-vfio"
 
   option_src_print_this_option_and_description \
-    " " \
+    " \t" \
     "\t" \
     "static-vfio"
 
   option_src_print_this_option_and_description \
-    " " \
+    " \t" \
     "\t\t" \
     "uninstall-vfio"
 
@@ -579,7 +584,7 @@ function option_src_print_usage
     "Supplemental options:"
 
   option_src_print_many_option_and_description \
-    " " \
+    " \t" \
     "\t" \
     "cmdline" \
     "drivers" \
@@ -588,6 +593,13 @@ function option_src_print_usage
     "ignore-drivers" \
     "ignore-hardware-ids" \
     "ignore-iommu-groups"
+
+  option_src_print_many_option_and_description \
+    " \t" \
+    "\t" \
+    "help" \
+    "override" \
+    "verbose"
 
   return 0
 }
