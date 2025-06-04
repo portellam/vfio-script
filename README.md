@@ -77,7 +77,7 @@ or [GitHub][22].
 ### ✅ 4. Requirements
 #### 4.1. Software
 
-1. [`parse-iommu-devices` <sup>\[8\]</sup>](#8) to reliably parse hardware devices.
+1. [***Parse IOMMU Devices*** <sup>\[8\]</sup>](#8) to reliably parse hardware devices.
 2. **GRUB** to enable firmware options and (optionally) define a VFIO setup.
 3. **Linux** as the host operating system and terminal interface/command line.
 
