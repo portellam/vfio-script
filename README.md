@@ -141,8 +141,8 @@ The following firmware options are supported and enabled (motherboard and CPU):
      - `git clone https://www.codeberg.org/portellam/vfio-script`
      - `git clone https://www.github.com/portellam/vfio-script`
 
-[31]: https://codeberg.org/portellam/vfio-script/releases/latest
-[32]: https://github.com/portellam/vfio-script/releases/latest
+[51]: https://codeberg.org/portellam/vfio-script/releases/latest
+[52]: https://github.com/portellam/vfio-script/releases/latest
 
 ### ❓ 6. Usage
 
@@ -162,7 +162,7 @@ To open a CLI or Terminal:
 #### 6.2. Verify Installer is Executable
 
 1. Go to the directory where the cloned/extracted repository folder is:
-   `cd name_of_parent_folder/acpi-sleep/`
+   `cd name_of_parent_folder/vfio-script/`
 
 2. Make the installer script file executable: `chmod +x installer.bash`
 
