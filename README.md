@@ -51,7 +51,7 @@ devices, with the least overhead, and the highest possible performance
 (close to or near bare-metal).
 
 **Last and most important,** [*Quick Emulator (QEMU)*](#3-documentation) and
-[*Kernel-based Virtual Machine (KVM)](#3-documentation)
+[*Kernel-based Virtual Machine (KVM)*](#3-documentation)
 are the implementations which act as emulator and hypervisor, respectively.
 *The two are commonly combined to make the colloquial VFIO setup, at least on*
 *Linux.*
