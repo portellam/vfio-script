@@ -1,49 +1,76 @@
 # VFIO Script
+
 ### Development | v0.0.1
-Easily automate the install or uninstall of a hardware-passthrough (VFIO) setup
+
+Easily automate the install or uninstall of a hardware pass-through (VFIO) setup
 on a Linux machine. Select from either a dynamic, GRUB, or static setup.
 
 #### View this repository on [Codeberg][01] or [GitHub][02].
+
 [01]: https://codeberg.org/portellam/vfio-script
 [02]: https://github.com/portellam/vfio-script
 ##
 
 ## Table of Contents
-- [1. Why?](#1-why)
-- [2. Related Projects](#2-related-projects)
-- [3. Documentation](#3-documentation)
-- [4. Requirements](#4-requirements)
+
+- [❓ 1. Why?](#-1-why)
+- [🛠️ 2. Related Projects](#️-2-related-projects)
+- [📝 3. Documentation](#-3-documentation)
+
+- [✅ 4. Host Requirements](-#4-requirements)
   - [4.1. Software](#41-software)
   - [4.2. Hardware](#42-hardware)
-- [5. Download](#4-download)
-- [6. Usage](#6-usage)
+
+- [💾 5. Download](#-4-download)
+
+- [❓ 6. Usage](#6-usage)
   - [6.1. Install](#61-install)
   - [6.2. Executable](#62-executable)
   - [6.3. VFIO Setups](#63-vfio-setups)
-- [7. Contact](#7-contact)
-- [8. Contact](#8-disclaimer)
-- [9. References](#9-references)
+
+- [⚠️ 7. Disclaimer](#-7-disclaimer)
+- [☎️ 8. Contact](#-8-contact)
+- [🌐 9. References](#-9-references)
 
 ## Contents
-### 1. Why?
-Do you like *repeatedly* editing configuration files?
+### ❓ 1. Why?
 
-No? Then you're going **sane**.
+Do you like *repeatedly* editing configuration files? No? Then you're going **sane**.
 
-### 2. Related Projects
+[*Hardware* or *PCI pass-through*](#3-documentation) is a feature in computing,
+in which a Host machine can allocate and reserve PCI devices to guests or
+Virtual Machines (VMs). This has advantages, most inherent is greater
+compatibility over software-emulated devices; *devices do not have to be*
+*developed twice.*
+
+[*Virtual function input-output (VFIO)*](#3-documentation) is the implementation
+in which makes *Hardware pass-through* possible. It exposes direct access to
+devices, securely, with the least overhead, and highest possible performance
+(close to or near bare-metal).
+
+**Last and most important,** [**Quick Emulator (QEMU)*<sup>\[1\]</sup>](#1) and
+[*Kernel-based Virtual Machine (KVM)*<sup>\[2\]</sup>](#2)
+are the implementations which act as emulator and hypervisor, respectively.
+*The two are commonly combined to make the colloquial VFIO setup, at least on*
+*Linux.*
+
+### 🛠️ 2. Related Projects
+
 To view other relevant projects, visit [Codeberg][21]
 or [GitHub][22].
 
 [21]: https://codeberg.org/portellam/vfio-collection
 [22]: https://github.com/portellam/vfio-collection
 
-### 3. Documentation
-- What is VFIO?[<sup>[3]</sup>](#3)
-- VFIO Discussion and Support[<sup>[4]</sup>](#4)
-- Hardware-Passthrough Guide[<sup>[2]</sup>](#2)
-- Virtual Machine XML Format Guide[<sup>[5]</sup>](#5)
+### 📝 3. Documentation
 
-### 4. Requirements
+- What is IOMMU? [<sup>\[3\]</sup>](#3)
+- What is VFIO? [<sup>\[4\]</sup>](#4)
+- VFIO Discussion and Support [<sup>\[5\]</sup>](#5)
+- Hardware/PCI Pass-through Guide [<sup>\[6\]</sup>](#6)
+- Virtual Machine XML Format Guide [<sup>\[7\]</sup>](#7)
+
+### ✅ 4. Requirements
 #### 4.1. Software
 1. [`parse-iommu-devices`](#1) to reliably parse hardware devices.
 2. **GRUB** to enable firmware options and (optionally) define a VFIO setup.
@@ -65,7 +92,7 @@ The following firmware options are supported and enabled (motherboard and CPU):
     - **ARM** (`SMMU`) and other CPU architectures are not **explicitly**
     supported by `vfio-script`. *Use at your own risk.*
 
-### 5. Download
+### 💾 5. Download
 - Download the Latest Release:&ensp;[Codeberg][41] or [GitHub][42].
 
 - Download the `.zip` file:
@@ -94,7 +121,7 @@ The following firmware options are supported and enabled (motherboard and CPU):
 [41]: https://codeberg.org/portellam/vfio-script/releases/latest
 [42]: https://github.com/portellam/vfio-script/releases/latest
 
-### 6. Usage
+### ❓ 6. Usage
 #### 6.1. Install
 Installer will copy the script file to `/usr/local/bin/`, and source files to
 `/usr/local/bin/vfio-script.d/`.
@@ -157,7 +184,7 @@ sudo bash installer.sh
   -g|--iommu-groups GROUPS  Specify which IOMMU groups may be reserved for any
                             Guest machine.
 
-                            GROUPS is a comma delimited list of text.
+                            0
 
   -d|--drivers DRIVERS      Specify which devices' drivers to override with the
                             "vfio-pci" driver.
@@ -235,43 +262,59 @@ Examples:
       - creates `/etc/modprobe.d/vfio.conf`.
       - **overwrites** `/etc/modules`.
 
-### 7. Contact
+### ⚠️ 7. Disclaimer
 Did you encounter a bug? Do you need help? Please visit the [Issues][71] page.
 
 [71]: https://github.com/portellam/vfio-script/issues
 
-### 8. Disclaimer
+### ☎️ 8. Contact
 Use at your own risk. Please review your system's specifications and resources.
 
-### 9. References
+### 🌐 9. References
+
 #### 1.
-&nbsp;&nbsp;**parse-iommu-devices**. Codeberg. Accessed May 7, 2025.
 
-&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://codeberg.org/portellam/parse-iommu-devices.</sup>
+&nbsp;&nbsp;**QEMU**. qemu.org. Accessed June 4, 2025
 
-&nbsp;&nbsp;**parse-iommu-devices**. GitHub. Accessed May 7, 2025.
-
-&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://github.com/portellam/parse-iommu-devices.</sup>
+&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://www.qemu.org/.</sup>
 
 #### 2.
-&nbsp;&nbsp;**PCI passthrough via OVMF**. ArchWiki. Accessed June 14, 2024.
 
-&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF.</sup>
+&nbsp;&nbsp;**Kernel-based Virtual Machine**. Wikipedia. Accessed June 4, 2025.
+
+&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://en.wikipedia.org/wiki/Kernel-based_Virtual_Machine.</sup>
 
 #### 3.
+
+&nbsp;&nbsp;**Input-output memory management unit**. Wikipedia. Accessed
+June 4, 2025.
+
+&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://en.wikipedia.org/wiki/Input%E2%80%93output_memory_management_unit.</sup>
+
+#### 4.
+
 &nbsp;&nbsp;**VFIO - ‘Virtual Function I/O’ - The Linux Kernel Documentation**.
 The linux kernel. Accessed June 14, 2024.
 
 &nbsp;&nbsp;&nbsp;&nbsp;<sup>https://www.kernel.org/doc/html/latest/driver-api/vfio.html.</sup>
 
-#### 4.
+#### 5.
+
 &nbsp;&nbsp;**VFIO Discussion and Support**. Reddit. Accessed June 14, 2024.
 
-&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://www.reddit.com/r/VFIO/.</sup>
+&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://old.reddit.com/r/VFIO/.</sup>
 
-#### 5.
-&nbsp;&nbsp;**XML Design Format** GitHub - libvirt/libvirt. Accessed June 18, 2024.
+#### 6.
+&nbsp;&nbsp;**PCI passthrough via OVMF**. ArchWiki. Accessed June 14, 2024.
+
+&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF.</sup>
+
+#### 7.
+
+&nbsp;&nbsp;**XML Design Format**. GitHub - libvirt/libvirt. Accessed June 18, 2024.
 
 &nbsp;&nbsp;&nbsp;&nbsp;<sup>https://github.com/libvirt/libvirt/blob/master/docs/formatdomain.rst.</sup>
+
+##
 
 #### Click [here](#vfio-script) to return to the top of this document.
