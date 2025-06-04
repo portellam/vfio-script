@@ -77,7 +77,7 @@ or [GitHub][22].
 ### ✅ 4. Requirements
 #### 4.1. Software
 
-1. [`parse-iommu-devices`](#1) to reliably parse hardware devices.
+1. [`parse-iommu-devices` <sup>\[8\]</sup>](#8) to reliably parse hardware devices.
 2. **GRUB** to enable firmware options and (optionally) define a VFIO setup.
 3. **Linux** as the host operating system and terminal interface/command line.
 
@@ -367,6 +367,16 @@ The linux kernel. Accessed June 14, 2024.
 &nbsp;&nbsp;**XML Design Format**. GitHub - libvirt/libvirt. Accessed June 18, 2024.
 
 &nbsp;&nbsp;&nbsp;&nbsp;<sup>https://github.com/libvirt/libvirt/blob/master/docs/formatdomain.rst.</sup>
+
+#### 8.
+
+&nbsp;&nbsp;**Parse IOMMU devices**. Codeberg. Accessed June 4, 2025.
+
+&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://codeberg.org/portellam/parse-iommu-devices.</sup>
+
+&nbsp;&nbsp;**Parse IOMMU devices**. GitHub. Accessed June 4, 2025.
+
+&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://github.com/portellam/parse-iommu-devices.</sup>
 
 ##
 
