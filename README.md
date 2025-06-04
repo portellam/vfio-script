@@ -37,7 +37,7 @@ on a Linux machine. Select from either a dynamic, GRUB, or static setup.
 ## Contents
 ### ❓ 1. Why?
 
-Do you like *repeatedly* editing configuration files? No? Then you're going **sane**.
+**Do you like to repeatedly modify configuration files?** *No? Then you're going **sane**.*
 
 [*Hardware* or *PCI pass-through*](#3-documentation) is a feature in computing,
 in which a Host machine can allocate and reserve PCI devices to guests or
