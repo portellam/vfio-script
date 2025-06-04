@@ -50,8 +50,8 @@ which makes *Hardware pass-through* possible. It exposes direct, secure access t
 devices, with the least overhead, and the highest possible performance
 (close to or near bare-metal).
 
-**Last and most important,** [*Quick Emulator (QEMU)*<sup>\[1\]</sup>](#1) and
-[*Kernel-based Virtual Machine (KVM)*<sup>\[2\]</sup>](#2)
+**Last and most important,** [*Quick Emulator (QEMU)*](#3-documentation) and
+[*Kernel-based Virtual Machine (KVM)](#3-documentation)
 are the implementations which act as emulator and hypervisor, respectively.
 *The two are commonly combined to make the colloquial VFIO setup, at least on*
 *Linux.*
@@ -66,8 +66,10 @@ or [GitHub][22].
 
 ### 📝 3. Documentation
 
-- What is IOMMU? [<sup>\[3\]</sup>](#3)
-- What is VFIO? [<sup>\[4\]</sup>](#4)
+- What is IOMMU? [<sup>\[1\]</sup>](#1)
+- What is VFIO? [<sup>\[2\]</sup>](#2)
+- What is QEMU? [<sup>\[3\]</sup>](#3)
+- What is KVM? [<sup>\[4\]</sup>](#4)
 - VFIO Discussion and Support [<sup>\[5\]</sup>](#5)
 - Hardware/PCI Pass-through Guide [<sup>\[6\]</sup>](#6)
 - Virtual Machine XML Format Guide [<sup>\[7\]</sup>](#7)
@@ -325,29 +327,29 @@ Use at your own risk. Please review your system's specifications and resources.
 
 #### 1.
 
-&nbsp;&nbsp;**QEMU**. qemu.org. Accessed June 4, 2025
-
-&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://www.qemu.org/.</sup>
-
-#### 2.
-
-&nbsp;&nbsp;**Kernel-based Virtual Machine**. Wikipedia. Accessed June 4, 2025.
-
-&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://en.wikipedia.org/wiki/Kernel-based_Virtual_Machine.</sup>
-
-#### 3.
-
 &nbsp;&nbsp;**Input-output memory management unit**. Wikipedia. Accessed
 June 4, 2025.
 
 &nbsp;&nbsp;&nbsp;&nbsp;<sup>https://en.wikipedia.org/wiki/Input%E2%80%93output_memory_management_unit.</sup>
 
-#### 4.
+#### 2.
 
 &nbsp;&nbsp;**VFIO - ‘Virtual Function I/O’ - The Linux Kernel Documentation**.
 The linux kernel. Accessed June 14, 2024.
 
 &nbsp;&nbsp;&nbsp;&nbsp;<sup>https://www.kernel.org/doc/html/latest/driver-api/vfio.html.</sup>
+
+#### 3.
+
+&nbsp;&nbsp;**QEMU**. qemu.org. Accessed June 4, 2025
+
+&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://www.qemu.org/.</sup>
+
+#### 4.
+
+&nbsp;&nbsp;**Kernel-based Virtual Machine**. Wikipedia. Accessed June 4, 2025.
+
+&nbsp;&nbsp;&nbsp;&nbsp;<sup>https://en.wikipedia.org/wiki/Kernel-based_Virtual_Machine.</sup>
 
 #### 5.
 
