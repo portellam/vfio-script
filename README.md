@@ -24,9 +24,11 @@ on a Linux machine. Select from either a dynamic, GRUB, or static setup.
 - [💾 5. Download](#-4-download)
 
 - [❓ 6. Usage](#6-usage)
-  - [6.1. Install](#61-install)
-  - [6.2. Executable](#62-executable)
-  - [6.3. VFIO Setups](#63-vfio-setups)
+  - [6.1. The Command Interface (CLI) or Terminal](#61-the-command-interface-cli-or-terminal)
+  - [6.2. Verify Installer is Executable](#62-verify-script-is-executable)
+  - [6.3. `installer.bash`](#63-installerbash)
+  - [6.4. `vfio-script``](#64-vfioscript)
+  - [6.5. VFIO Setups](#65-vfio-setups)
 
 - [⚠️ 7. Disclaimer](#-7-disclaimer)
 - [☎️ 8. Contact](#-8-contact)
@@ -43,12 +45,12 @@ Virtual Machines (VMs). This has advantages, most inherent is greater
 compatibility over software-emulated devices; *devices do not have to be*
 *developed twice.*
 
-[*Virtual function input-output (VFIO)*](#3-documentation) is the implementation
-in which makes *Hardware pass-through* possible. It exposes direct access to
-devices, securely, with the least overhead, and highest possible performance
+[*Virtual function input-output (VFIO)*](#3-documentation) is the framework in
+which makes *Hardware pass-through* possible. It exposes direct, secure access to
+devices, with the least overhead, and the highest possible performance
 (close to or near bare-metal).
 
-**Last and most important,** [**Quick Emulator (QEMU)*<sup>\[1\]</sup>](#1) and
+**Last and most important,** [*Quick Emulator (QEMU)*<sup>\[1\]</sup>](#1) and
 [*Kernel-based Virtual Machine (KVM)*<sup>\[2\]</sup>](#2)
 are the implementations which act as emulator and hypervisor, respectively.
 *The two are commonly combined to make the colloquial VFIO setup, at least on*
@@ -72,6 +74,7 @@ or [GitHub][22].
 
 ### ✅ 4. Requirements
 #### 4.1. Software
+
 1. [`parse-iommu-devices`](#1) to reliably parse hardware devices.
 2. **GRUB** to enable firmware options and (optionally) define a VFIO setup.
 3. **Linux** as the host operating system and terminal interface/command line.
@@ -85,7 +88,9 @@ or [GitHub][22].
   | SUSE                 | No     | N/A        |
 
 #### 4.2. Hardware
+
 The following firmware options are supported and enabled (motherboard and CPU):
+
 - **IOMMU**
     - For **AMD** machines:&nbsp;`AMD-Vi`
     - For **Intel** machines:&ensp;&nbsp;`VT-d`
@@ -93,36 +98,81 @@ The following firmware options are supported and enabled (motherboard and CPU):
     supported by `vfio-script`. *Use at your own risk.*
 
 ### 💾 5. Download
-- Download the Latest Release:&ensp;[Codeberg][41] or [GitHub][42].
+
+- Download the Latest Release: [Codeberg][51], [GitHub][52]
 
 - Download the `.zip` file:
+
+  - From the webpage
+
     1. Viewing from the top of the repository's (current) webpage, click the
-        drop-down icon:
-        - `···` on Codeberg.
-        - `<> Code ` on GitHub.
+       drop-down icon:
+
+       - `···` on Codeberg.
+       - `<> Code ` on GitHub.
+
     2. Click `Download ZIP` and save.
     3. Open the `.zip` file, then extract its contents.
 
-- Clone the repository:
-    1. Open a Command Line Interface (CLI) or Terminal.
-        - Open a console emulator (for Debian systems: Konsole).
-        - **Linux only:** Open an existing console: press `CTRL` + `ALT` + `F2`,
-        `F3`, `F4`, `F5`, or `F6`.
-            - **To return to the desktop,** press `CTRL` + `ALT` + `F7`.
-            - `F1` is reserved for debug output of the Linux kernel.
-            - `F7` is reserved for video output of the desktop environment.
-            - `F8` and above are unused.
-    2. Change your directory to your home folder or anywhere safe:
-        - `cd ~`
-    3. Clone the repository:
-        - `git clone https://www.codeberg.org/portellam/vfio-script`
-        - `git clone https://www.github.com/portellam/vfio-script`
+  - From the CLI:
 
-[41]: https://codeberg.org/portellam/vfio-script/releases/latest
-[42]: https://github.com/portellam/vfio-script/releases/latest
+    1. [Open the CLI](#61-the-command-interface-cli-or-terminal).
+    2. Download the Latest:
+
+    ```bash
+    GH_USER=portellam; \
+    GH_REPO=vfio-script; \
+    GH_BRANCH=master; \
+    wget \
+      https://github.com/${GH_USER}/${GH_REPO}/archive/refs/heads/${GH_BRANCH}.zip \
+      -O "${GH_REPO}-${GH_BRANCH}.zip" \
+    && unzip ./"${GH_REPO}-${GH_BRANCH}.zip" \
+    && rm ./"${GH_REPO}-${GH_BRANCH}.zip"
+    ```
+
+- Clone the repository:
+
+  1. [Open the CLI](#61-the-command-interface-cli-or-terminal).
+
+  2. Change your directory to your home folder or anywhere safe:
+     - `cd ~`
+
+  3. Clone the repository:
+     - `git clone https://www.codeberg.org/portellam/vfio-script`
+     - `git clone https://www.github.com/portellam/vfio-script`
+
+[31]: https://codeberg.org/portellam/vfio-script/releases/latest
+[32]: https://github.com/portellam/vfio-script/releases/latest
 
 ### ❓ 6. Usage
-#### 6.1. Install
+
+#### 6.1. The Command Interface (CLI) or Terminal
+
+To open a CLI or Terminal:
+
+- Open a console emulator (for Debian systems: Konsole).
+- **Linux only:** Open an existing console: press `CTRL` + `ALT` + `F2`,
+  `F3`, `F4`, `F5`, or `F6`.
+
+  - **To return to the desktop,** press `CTRL` + `ALT` + `F7`.
+  - `F1` is reserved for debug output of the Linux kernel.
+  - `F7` is reserved for video output of the desktop environment.
+  - `F8` and above are unused.
+
+#### 6.2. Verify Installer is Executable
+
+1. Go to the directory where the cloned/extracted repository folder is:
+   `cd name_of_parent_folder/acpi-sleep/`
+
+2. Make the installer script file executable: `chmod +x installer.bash`
+
+   - Do **not** make any other script files executable. The installer will
+    perform this action.
+   - Do **not** make any non-script file executable. This is not necessary and
+     potentially dangerous.
+
+#### 6.3. `installer.bash`
+
 Installer will copy the script file to `/usr/local/bin/`, and source files to
 `/usr/local/bin/vfio-script.d/`.
 
@@ -130,7 +180,8 @@ Installer will copy the script file to `/usr/local/bin/`, and source files to
 sudo bash installer.sh
 ```
 
-#### 6.2. Executable
+#### 6.4. `vfio-script`
+
 - From anywhere, execute: `vfio-script`
 
 ```
@@ -227,7 +278,7 @@ Examples:
                           kernels.
 ```
 
-#### 6.3. VFIO setups
+#### 6.5. VFIO setups
 - **Dynamic**
   - Define a temporary VFIO setup as a QEMU command line.
   - Append to a Libvirt hook or a Guest machine configuration file.
