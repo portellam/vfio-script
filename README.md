@@ -27,7 +27,7 @@ on a Linux machine. Select from either a dynamic, GRUB, or static setup.
   - [6.1. The Command Interface (CLI) or Terminal](#61-the-command-interface-cli-or-terminal)
   - [6.2. Verify Installer is Executable](#62-verify-script-is-executable)
   - [6.3. `installer.bash`](#63-installerbash)
-  - [6.4. `vfio-script``](#64-vfioscript)
+  - [6.4. `vfio-script``](#64-vfio-script)
   - [6.5. VFIO Setups](#65-vfio-setups)
 
 - [⚠️ 7. Disclaimer](#-7-disclaimer)
@@ -97,7 +97,7 @@ The following firmware options are supported and enabled (motherboard and CPU):
     - For **AMD** machines:&nbsp;`AMD-Vi`
     - For **Intel** machines:&ensp;&nbsp;`VT-d`
     - **ARM** (`SMMU`) and other CPU architectures are not **explicitly**
-    supported by `vfio-script`. *Use at your own risk.*
+    supported by *VFIO Script. Use at your own risk.*
 
 ### 💾 5. Download
 
@@ -153,9 +153,9 @@ The following firmware options are supported and enabled (motherboard and CPU):
 To open a CLI or Terminal:
 
 - Open a console emulator (for Debian systems: Konsole).
+
 - **Linux only:** Open an existing console: press `CTRL` + `ALT` + `F2`,
   `F3`, `F4`, `F5`, or `F6`.
-
   - **To return to the desktop,** press `CTRL` + `ALT` + `F7`.
   - `F1` is reserved for debug output of the Linux kernel.
   - `F7` is reserved for video output of the desktop environment.
@@ -167,7 +167,6 @@ To open a CLI or Terminal:
    `cd name_of_parent_folder/vfio-script/`
 
 2. Make the installer script file executable: `chmod +x installer.bash`
-
    - Do **not** make any other script files executable. The installer will
     perform this action.
    - Do **not** make any non-script file executable. This is not necessary and
@@ -281,6 +280,7 @@ Examples:
 ```
 
 #### 6.5. VFIO setups
+
 - **Dynamic**
   - Define a temporary VFIO setup as a QEMU command line.
   - Append to a Libvirt hook or a Guest machine configuration file.
@@ -289,6 +289,7 @@ Examples:
 - **Multiple GRUB**
   - Define one or more persistent VFIO setup(s) as GRUB command line
   permutations, where one permutation may be chosen at Host machine startup.
+
   - **Formulae:**
     - &ensp;**Given**&ensp; <img src="./media/formula-1.png"/>
       - &ensp;**If**&ensp; <img src="./media/formula-2.png"/>
@@ -300,7 +301,7 @@ Examples:
         - &ensp;**Then**&ensp; <img src="./media/formula-7.png"/>
 
   - Modifies the following files:
-    - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
+    - **creates** `/etc/grub.d/40_custom` to define the multiple boot menu entries.
     - **overwrites** `/etc/default/grub` to define the default boot menu entry.
 
 - **Static**
@@ -311,8 +312,8 @@ Examples:
 
     - system configuration files:
       - **overwrites** `/etc/initramfs-tools/modules`.
-      - creates `/etc/modprobe.d/pci-blacklists.conf`.
-      - creates `/etc/modprobe.d/vfio.conf`.
+      - **creates** `/etc/modprobe.d/pci-blacklists.conf`.
+      - **creates** `/etc/modprobe.d/vfio.conf`.
       - **overwrites** `/etc/modules`.
 
 ### ⚠️ 7. Disclaimer
