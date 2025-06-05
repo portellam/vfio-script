@@ -289,15 +289,15 @@ Examples:
 - **Multiple GRUB**
   - Define one or more persistent VFIO setup(s) as GRUB command line
   permutations, where one permutation may be chosen at Host machine startup.
-
   - **Formulae:**
-    - **Given**: `groups_guest_video = groups_total_video - groups_host_video`
-      - **If**: `groups_guest_video >= 1`
-        - **Given**: `groups_host_video >= 1`
-        - **Then**: `permutations_total = kernels * groups_guest_video`
-      - **If**: `groups_guest_video = 0`
-        - **Given**: `groups_total_guest >= 1`
-        - **Then**: `permutations_total = kernels`
+    - &ensp;**Given**&ensp; <img align="left" height="100" src="./media/formula-1.png"/>
+      - &ensp;**If**&ensp; <img align="left" height="100" src="./media/formula-2.png"/>
+        - &ensp;**Given**&ensp; <img align="left" height="100" src="./media/formula-3.png"/>
+        - &ensp;**Then**&ensp; <img align="left" height="100" src="./media/formula-4.png"/>
+
+      - &ensp;**If**&ensp; <img align="left" height="100" src="./media/formula-5.png"/>
+        - **Given**&ensp; <img align="left" height="100" src="./media/formula-6.png"/>
+        - &ensp;**Then**&ensp; <img align="left" height="100" src="./media/formula-7.png"/>
 
   - Modifies the following files:
     - creates `/etc/grub.d/40_custom` to define the multiple boot menu entries.
