@@ -26,8 +26,8 @@ on a Linux machine. Select from either a dynamic, GRUB, or static setup.
 - [❓ 6. Usage](#6-usage)
   - [6.1. The Command Interface (CLI) or Terminal](#61-the-command-interface-cli-or-terminal)
   - [6.2. Verify Installer is Executable](#62-verify-script-is-executable)
-  - [6.3. `installer.bash`](#63-installerbash)
-  - [6.4. `vfio-script``](#64-vfio-script)
+  - [6.3. Installer](#63-installer)
+  - [6.4. Executable](#64-executable)
   - [6.5. VFIO Setups](#65-vfio-setups)
 
 - [⚠️ 7. Disclaimer](#-7-disclaimer)
@@ -172,7 +172,7 @@ To open a CLI or Terminal:
    - Do **not** make any non-script file executable. This is not necessary and
      potentially dangerous.
 
-#### 6.3. `installer.bash`
+#### 6.3. Installer
 
 Installer will copy the script file to `/usr/local/bin/`, and source files to
 `/usr/local/bin/vfio-script.d/`.
@@ -181,7 +181,7 @@ Installer will copy the script file to `/usr/local/bin/`, and source files to
 sudo bash installer.sh
 ```
 
-#### 6.4. `vfio-script`
+#### 6.4. Executable
 
 - From anywhere, execute: `vfio-script`
 
