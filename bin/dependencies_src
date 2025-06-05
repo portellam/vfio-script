@@ -72,13 +72,13 @@ function dependencies_src_does_executable_exist
     "${MULTIPLE_VFIO_SCRIPT}" \
     &> /dev/null; then
     echo \
-      "Warning: Missing required executable ${MULTIPLE_VFIO_SCRIPT}" \
+      "Warning: Missing required executable '${MULTIPLE_VFIO_SCRIPT}'." \
       >&2
     return 1
   fi
 
   echo \
-    "Alert: Found required executable ${MULTIPLE_VFIO_SCRIPT}" \
+    "Alert: Found required executable '${MULTIPLE_VFIO_SCRIPT}'." \
     >&2
 
   return 0
